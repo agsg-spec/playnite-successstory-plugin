@@ -11,7 +11,7 @@ if (Test-Path -Path $PlaynitePathTEMP)
 	$PlaynitePath = $PlaynitePathTEMP
 }
 
-$PlaynitePathTEMP = "D:\Playnite_dev"
+$PlaynitePathTEMP = "D:\Playnite"
 if (Test-Path -Path $PlaynitePathTEMP) 
 {
 	$PlaynitePath = $PlaynitePathTEMP
