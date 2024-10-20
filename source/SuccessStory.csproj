@@ -52,6 +52,8 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.Data.SQLite" Version="1.0.115.5" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.115.5" />
     <Reference Include="akr.WPF.Controls.ColorPicker">
       <HintPath>playnite-plugincommon\CommonPluginsResources\Resources\akr.WPF.Controls.ColorPicker.dll</HintPath>
       <Private>True</Private>
@@ -127,6 +129,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Clients\AchievementWatcherAchievements.cs" />
     <Compile Include="Controls\Customs\AchievementImage.xaml.cs">
       <DependentUpon>AchievementImage.xaml</DependentUpon>
     </Compile>
@@ -246,6 +249,9 @@
     </Compile>
     <Compile Include="Views\SuccessStoryCategoryView.xaml.cs">
       <DependentUpon>SuccessStoryCategoryView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SuccessStoryForceSteamAppId.xaml.cs">
+      <DependentUpon>SuccessStoryForceSteamAppId.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\SuccessStoryOneGameView.xaml.cs">
       <DependentUpon>SuccessStoryOneGameView.xaml</DependentUpon>
@@ -478,6 +484,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\SuccessStoryCategoryView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\SuccessStoryForceSteamAppId.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

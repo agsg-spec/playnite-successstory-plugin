@@ -161,6 +161,8 @@ namespace SuccessStory
         public string RetroAchievementsKey { get; set; } = string.Empty;
         public List<RaConsoleAssociated> RaConsoleAssociateds { get; set; } = new List<RaConsoleAssociated>();
 
+        public bool EnableAchievementWatcher { get; set; } = false; //eFMan changes
+
         public bool EnableLocal { get; set; } = false;
         public List<Folder> LocalPath { get; set; } = new List<Folder>();
 
@@ -201,6 +203,8 @@ namespace SuccessStory
 
         public bool UseLocalised { get; set; } = false;
 
+        public Dictionary<Guid, int> ForcedSteamAppIds { get; set; } //eFMann
+ 
         public SteamSettings SteamApiSettings { get; set; } = new SteamSettings();
         public EpicSettings EpicSettings { get; set; } = new EpicSettings();
         #endregion

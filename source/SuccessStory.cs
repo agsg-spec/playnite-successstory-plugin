@@ -30,6 +30,7 @@ using CommonPluginsStores.Steam;
 using SuccessStory.Clients;
 using SuccessStory.Models.RetroAchievements;
 using CommonPluginsStores.Epic;
+using System.Resources;
 
 namespace SuccessStory
 {
@@ -197,6 +198,24 @@ namespace SuccessStory
                 Common.LogError(ex, false, $"Error on WindowBase_LoadedEvent for {WinIdProperty}", true, PluginDatabase.PluginName);
             }
         }
+        private void ForceSteamAppId(Game game)
+        {
+            SuccessStoryForceSteamAppId ViewExtension = new SuccessStoryForceSteamAppId(game);
+            Window windowExtension = PlayniteUiHelper.CreateExtensionWindow("Force Steam AppId", ViewExtension);
+            windowExtension.ShowDialog();
+
+            if (ViewExtension.SteamAppId.HasValue)
+            {
+                PluginSettings.Settings.ForcedSteamAppIds = PluginSettings.Settings.ForcedSteamAppIds ?? new Dictionary<Guid, int>();
+                PluginSettings.Settings.ForcedSteamAppIds[game.Id] = ViewExtension.SteamAppId.Value;
+                SavePluginSettings(PluginSettings.Settings);
+
+                PluginDatabase.Refresh(game.Id);
+
+                PlayniteApi.Dialogs.ShowMessage($"Steam AppId for {game.Name} has been set to {ViewExtension.SteamAppId.Value}.");
+            }
+        }
+
         #endregion
 
 
@@ -370,6 +389,16 @@ namespace SuccessStory
                             }
                         });
                     }
+
+                    gameMenuItems.Add(new GameMenuItem
+                    {
+                        MenuSection = ResourceProvider.GetString("LOCSuccessStory"),
+                        Description = "Force Steam AppId",
+                        Action = (mainMenuItem) =>
+                        {
+                            ForceSteamAppId(GameMenu);
+                        }
+                    });
 
                     if (PluginSettings.Settings.EnableRetroAchievements && achievementSource == SuccessStoryDatabase.AchievementSource.RetroAchievements)
                     {
