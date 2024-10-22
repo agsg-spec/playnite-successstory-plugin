@@ -9,6 +9,20 @@
 # playnite-successstory-plugin
 Extension for [Playnite](https://playnite.link).
 
+## Fork by eFMann: Improving Steam Emulator Achievements
+
+This fork of the SuccessStory plugin specifically attempts to fix and enhance Steam Emulator Achievement support.
+
+### Key Enhancements:
+
+1. **Improved Steam Emulator Achievement Support**
+   - This fork attempts to fix issues with Steam Emulator Achievement detection and tracking.
+   - Expanded support for a wider range of Steam Emulators including Goldberg, SSE, Ali213, Codex, Rune, Empress, and OnlineFix. 
+   - Aims to provide more accurate and reliable achievement tracking across various emulated Steam environments.
+
+2. **Force Steam AppID Feature**
+   - Implemented a new function to manually force the Steam AppID for a game.
+
 ## Information
 The plugin gets localised achievements (if they exist) or manual achievements.
 
