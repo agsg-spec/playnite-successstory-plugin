@@ -206,6 +206,25 @@ namespace SuccessStory.Views
         {
             return ExophaseAchievements.IsConnected();
         }
+
+        private bool IsValidAchievementFolder(string folderPath)
+        {
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                return false;
+
+            // Check for SteamAppId subfolders
+            bool hasSteamAppIdFolders = Directory.GetDirectories(folderPath)
+                .Any(dir => int.TryParse(Path.GetFileName(dir), out _));
+
+            // Check for ALI213.ini
+            bool hasAli213File = File.Exists(Path.Combine(folderPath, "ALI213.ini"));
+
+            // Check for valve.ini
+            bool hasValveFile = File.Exists(Path.Combine(folderPath, "valve.ini"));
+
+            return hasSteamAppIdFolders || hasAli213File || hasValveFile;
+        }
+
         #endregion
 
 
@@ -221,12 +240,51 @@ namespace SuccessStory.Views
         {
             int indexFolder = int.Parse(((Button)sender).Tag.ToString());
 
-            string SelectedFolder = API.Instance.Dialogs.SelectFolder();
-            if (!SelectedFolder.IsNullOrEmpty())
+            string selectedFolder = API.Instance.Dialogs.SelectFolder();
+            if (!selectedFolder.IsNullOrEmpty())
             {
-                PART_ItemsControl.ItemsSource = null;
-                LocalPath[indexFolder].FolderPath = SelectedFolder;
-                PART_ItemsControl.ItemsSource = LocalPath;
+                if (IsValidAchievementFolder(selectedFolder))
+                {
+                    PART_ItemsControl.ItemsSource = null;
+                    LocalPath[indexFolder].FolderPath = selectedFolder;
+                    PART_ItemsControl.ItemsSource = LocalPath;
+                }
+                else
+                {
+                    API.Instance.Dialogs.ShowMessage(
+                        "Select a folder which contains SteamAppID folder(s)\nFor Ali213 and Valve select a folder where the ALI213.ini or valve.ini file is located",
+                        "Invalid Achievement Folder",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            }
+        }
+
+        private void DefaultDirs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                string selectedPath = selectedItem.Content.ToString();
+
+                // Resolve environment variables in the path
+                selectedPath = Environment.ExpandEnvironmentVariables(selectedPath);
+
+                if (IsValidAchievementFolder(selectedPath))
+                {
+                    PART_ItemsControl.ItemsSource = null;
+                    LocalPath.Add(new Folder { FolderPath = selectedPath });
+                    PART_ItemsControl.ItemsSource = LocalPath;
+                }
+                else
+                {
+                    API.Instance.Dialogs.ShowMessage(
+                        "The selected default directory does not contain the required files or folders.\nPlease verify the path or select a different directory.",
+                        "Invalid Achievement Folder",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+
+                    comboBox.SelectedIndex = -1; // Clear selection
+                }
             }
         }
 
