@@ -23,6 +23,9 @@ This fork of the SuccessStory plugin specifically attempts to fix and enhance St
 2. **Force Steam AppID Feature**
    - Implemented a new function to manually force the Steam AppID for a game.
 
+3. **Custom Achievements Folder Paths Feature**
+   - Reworked and improved custom achievement folder paths.
+
 ## Information
 The plugin gets localised achievements (if they exist) or manual achievements.
 
