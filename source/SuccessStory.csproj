@@ -130,6 +130,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Clients\AchievementWatcherAchievements.cs" />
+    <Compile Include="Clients\Xbox360Achievements.cs" />
     <Compile Include="Controls\Customs\AchievementImage.xaml.cs">
       <DependentUpon>AchievementImage.xaml</DependentUpon>
     </Compile>
@@ -249,6 +250,9 @@
     </Compile>
     <Compile Include="Views\SuccessStoryCategoryView.xaml.cs">
       <DependentUpon>SuccessStoryCategoryView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SuccessStoryForceEpicNameSpace.xaml.cs">
+      <DependentUpon>SuccessStoryForceEpicNameSpace.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\SuccessStoryForceSteamAppId.xaml.cs">
       <DependentUpon>SuccessStoryForceSteamAppId.xaml</DependentUpon>
@@ -486,6 +490,10 @@
     <Page Include="Views\SuccessStoryCategoryView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\SuccessStoryForceEpicNameSpace.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\SuccessStoryForceSteamAppId.xaml">
       <SubType>Designer</SubType>

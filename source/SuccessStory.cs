@@ -31,6 +31,7 @@ using SuccessStory.Clients;
 using SuccessStory.Models.RetroAchievements;
 using CommonPluginsStores.Epic;
 using System.Resources;
+using System.Text.RegularExpressions;
 
 namespace SuccessStory
 {
@@ -198,6 +199,8 @@ namespace SuccessStory
                 Common.LogError(ex, false, $"Error on WindowBase_LoadedEvent for {WinIdProperty}", true, PluginDatabase.PluginName);
             }
         }
+
+        // eFMann - Added FroceSteamAppID function
         private void ForceSteamAppId(Game game)
         {
             SuccessStoryForceSteamAppId ViewExtension = new SuccessStoryForceSteamAppId(game);
@@ -215,7 +218,7 @@ namespace SuccessStory
                 PlayniteApi.Dialogs.ShowMessage($"Steam AppId for {game.Name} has been set to {ViewExtension.SteamAppId.Value}.");
             }
         }
-
+                
         #endregion
 
 
@@ -398,7 +401,7 @@ namespace SuccessStory
                         {
                             ForceSteamAppId(GameMenu);
                         }
-                    });
+                    });                                       
 
                     if (PluginSettings.Settings.EnableRetroAchievements && achievementSource == SuccessStoryDatabase.AchievementSource.RetroAchievements)
                     {
@@ -828,6 +831,38 @@ namespace SuccessStory
         // Add code to be executed when Playnite is initialized.
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
+
+            // eFMann - eddits plugin version             
+            PluginSettings.Settings.HasUpdatedVersion = false;
+
+            if (!PluginSettings.Settings.HasUpdatedVersion)
+            {
+                try
+                {                    
+                    string extensionPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "extension.yaml");
+                    
+                    if (File.Exists(extensionPath))
+                    {                        
+                        string content = File.ReadAllText(extensionPath);
+                        
+                        // Choose what to rename the version to...
+                        string pattern = @"Version: .*";
+                        string replacement = "Version: 3.3.2-eFM.2";                                                
+                        string updatedContent = content.Replace(content.Split('\n').First(x => x.StartsWith("Version:")), replacement);
+                        
+
+                        File.WriteAllText(extensionPath, updatedContent);
+                        
+                        PluginSettings.Settings.HasUpdatedVersion = true;
+                        SavePluginSettings(PluginSettings.Settings);                        
+                    }                    
+                }
+                catch (Exception ex)
+                {
+                    Common.LogError(ex, false, $"Failed to update version. Details: {ex.Message}\nStack: {ex.StackTrace}", true, PluginDatabase.PluginName);
+                }
+            }
+
             // StoreAPI intialization
             SteamApi = new SteamApi(PluginDatabase.PluginName);
             SteamApi.SetLanguage(API.Instance.ApplicationSettings.Language);

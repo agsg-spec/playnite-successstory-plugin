@@ -21,7 +21,7 @@ namespace SuccessStory.Clients
 
         }
 
-
+        
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);

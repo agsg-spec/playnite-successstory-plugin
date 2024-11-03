@@ -63,7 +63,7 @@ namespace SuccessStory.Clients
             return GetAchievements(game, new SearchResult { Name = game.Name, Url = url });
         }
 
-        public GameAchievements GetAchievements(Game game, SearchResult searchResult, bool isRetry = false)
+        public GameAchievements GetAchievements(Game game, SearchResult searchResult)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
             List<Achievements> allAchievements = new List<Achievements>();
@@ -71,7 +71,19 @@ namespace SuccessStory.Clients
             try
             {
                 string dataExophaseLocalised = string.Empty;
-                string dataExophase = Web.DownloadStringData(searchResult.Url).GetAwaiter().GetResult();
+                string dataExophase = string.Empty;
+
+                WebViewSettings webViewSettings = new WebViewSettings
+                {
+                    UserAgent = Web.UserAgent
+                };
+
+                using (IWebView webView = API.Instance.WebViews.CreateOffscreenView(webViewSettings))
+                {
+                    webView.DeleteDomainCookies(".exophase.com");
+                    webView.NavigateAndWait(searchResult.Url);
+                    dataExophase = webView.GetPageSource();
+                }
 
                 if (PluginDatabase.PluginSettings.Settings.UseLocalised && !IsConnected())
                 {
@@ -86,7 +98,12 @@ namespace SuccessStory.Clients
                 }
                 else if (PluginDatabase.PluginSettings.Settings.UseLocalised)
                 {
-                    dataExophaseLocalised = Web.DownloadStringData(searchResult.Url, GetCookies()).GetAwaiter().GetResult();
+                    using (IWebView webView = API.Instance.WebViews.CreateOffscreenView(webViewSettings))
+                    {
+                        GetCookies()?.ForEach(x => { webView.SetCookies(searchResult.Url, x); });
+                        webView.NavigateAndWait(searchResult.Url);
+                        dataExophaseLocalised = webView.GetPageSource();
+                    }
                 }
 
                 List<Achievements> All = ParseData(dataExophase);
@@ -111,6 +128,8 @@ namespace SuccessStory.Clients
                 Common.LogError(ex, false, true, PluginDatabase.PluginName);
             }
 
+            gameAchievements.Items = allAchievements;
+
             // Set source link
             if (gameAchievements.HasAchievements)
             {
@@ -122,7 +141,6 @@ namespace SuccessStory.Clients
                 };
             }
 
-            gameAchievements.Items = allAchievements;
             return gameAchievements;
         }
 
@@ -207,25 +225,36 @@ namespace SuccessStory.Clients
             List<SearchResult> ListSearchGames = new List<SearchResult>();
             try
             {
-                string UrlSearch = string.Format(UrlExophaseSearch, WebUtility.UrlEncode(Name));
+                WebViewSettings webViewSettings = new WebViewSettings
+                {
+                    UserAgent = Web.UserAgent
+                };
 
-                string StringJsonResult = Web.DownloadStringData(UrlSearch).GetAwaiter().GetResult();
-                if (!Serialization.TryFromJson(StringJsonResult, out ExophaseSearchResult exophaseScheachResult))
+                string json = string.Empty;
+                using (IWebView webView = API.Instance.WebViews.CreateOffscreenView(webViewSettings))
+                {
+                    string urlSearch = string.Format(UrlExophaseSearch, WebUtility.UrlEncode(Name));
+                    webView.NavigateAndWait(urlSearch);
+                    json = webView.GetPageText();
+                }
+
+                if (!Serialization.TryFromJson(json, out ExophaseSearchResult exophaseScheachResult))
                 {
                     Logger.Warn($"No Exophase result for {Name}");
+                    Logger.Warn($"{json}");
                     return ListSearchGames;
                 }
 
-                List<List> ListExophase = exophaseScheachResult?.games?.list;
+                List<List> ListExophase = exophaseScheachResult?.Games?.List;
                 if (ListExophase != null)
                 {
                     ListSearchGames = ListExophase.Select(x => new SearchResult
                     {
-                        Url = x.endpoint_awards,
-                        Name = x.title,
-                        UrlImage = x.images.o ?? x.images.l ?? x.images.m,
-                        Platforms = x.platforms.Select(p => p.name).ToList(),
-                        AchievementsCount = x.total_awards
+                        Url = x.EndpointAwards,
+                        Name = x.Title,
+                        UrlImage = x.Images.O ?? x.Images.L ?? x.Images.M,
+                        Platforms = x.Platforms.Select(p => p.Name).ToList(),
+                        AchievementsCount = x.TotalAwards ?? 0
                     }).ToList();
                 }
             }
@@ -378,7 +407,7 @@ namespace SuccessStory.Clients
             }
         }
 
-        private static Dictionary<string, string[]> PlaynitePlatformSpecificationIdToExophasePlatformName = new Dictionary<string, string[]>
+        private static Dictionary<string, string[]> PlaynitePlatformSpecificationIdToExophasePlatformName => new Dictionary<string, string[]>
         {
             { "xbox360", new[]{"Xbox 360"} },
             { "xbox_one", new[]{"Xbox One"} },
@@ -427,7 +456,7 @@ namespace SuccessStory.Clients
             HtmlParser parser = new HtmlParser();
             IHtmlDocument htmlDocument = parser.Parse(data);
 
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Achievements> allAchievements = new List<Achievements>();
             IHtmlCollection<IElement> sectionAchievements = htmlDocument.QuerySelectorAll("ul.achievement, ul.trophy, ul.challenge");
             string gameName = htmlDocument.QuerySelector("h2.me-2 a")?.GetAttribute("title");
 
@@ -439,22 +468,22 @@ namespace SuccessStory.Clients
             {
                 foreach (IElement section in sectionAchievements)
                 {
-                    foreach (IElement SearchAchievements in section.QuerySelectorAll("li"))
+                    foreach (IElement searchAchievements in section.QuerySelectorAll("li"))
                     {
                         try
                         {
-                            string sFloat = SearchAchievements.GetAttribute("data-average")
+                            string sFloat = searchAchievements.GetAttribute("data-average")
                                 .Replace(".", CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator)
                                 .Replace(",", CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator);
 
                             _ = float.TryParse(sFloat, out float Percent);
 
-                            string urlUnlocked = SearchAchievements.QuerySelector("img").GetAttribute("src");
-                            string name = WebUtility.HtmlDecode(SearchAchievements.QuerySelector("a").InnerHtml);
-                            string description = WebUtility.HtmlDecode(SearchAchievements.QuerySelector("div.award-description p").InnerHtml);
-                            bool isHidden = SearchAchievements.GetAttribute("class").IndexOf("secret") > -1;
+                            string urlUnlocked = searchAchievements.QuerySelector("img").GetAttribute("src");
+                            string name = WebUtility.HtmlDecode(searchAchievements.QuerySelector("a").InnerHtml);
+                            string description = WebUtility.HtmlDecode(searchAchievements.QuerySelector("div.award-description p").InnerHtml);
+                            bool isHidden = searchAchievements.GetAttribute("class").IndexOf("secret") > -1;
 
-                            AllAchievements.Add(new Achievements
+                            allAchievements.Add(new Achievements
                             {
                                 Name = name,
                                 UrlUnlocked = urlUnlocked,
@@ -472,7 +501,7 @@ namespace SuccessStory.Clients
                 }
             }
 
-            return AllAchievements;
+            return allAchievements;
         }
     }
 }

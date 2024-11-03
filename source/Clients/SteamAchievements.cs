@@ -297,22 +297,41 @@ namespace SuccessStory.Clients
             return gameAchievements;
         }
 
-
+        // eFMann - edited this section to fix SteamEmulators not loading Rarity data/percentage 
         public void SetRarity(uint appId, GameAchievements gameAchievements)
         {
-            ObservableCollection<GameAchievement> steamAchievements = SteamApi.GetAchievements(appId.ToString(), null);
-            steamAchievements.ForEach(x =>
+            if (gameAchievements?.Items == null || gameAchievements.Items.Count == 0)
             {
-                Achievements found = gameAchievements.Items?.Find(y => y.ApiName.IsEqual(x.Id));
-                if (found != null)
+                return;
+            }
+
+            try
+            {
+                ObservableCollection<GameAchievement> steamAchievements = SteamApi.GetAchievements(appId.ToString(), null);
+                if (steamAchievements != null)
                 {
-                    found.GamerScore = x.GamerScore;
+                    foreach (var steamAchievement in steamAchievements)
+                    {
+                        Achievements found = gameAchievements.Items?.Find(y => y.ApiName.IsEqual(steamAchievement.Id));
+                        if (found != null)
+                        {
+                            // Set both GamerScore and Percent for rarity
+                            found.GamerScore = steamAchievement.GamerScore;
+                            found.Percent = steamAchievement.Percent;
+                            found.NoRarety = false; // Explicitly ensure rarity is enabled
+                        }
+                    }
                 }
                 else
                 {
-
+                    Common.LogDebug(true, $"No Steam achievements data returned for appId {appId}");
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false, $"Error setting rarity data for appId {appId}", true, "SuccessStory");
+                // Don't rethrow - we don't want achievement loading to fail completely if rarity data fails
+            }
         }
 
         /*

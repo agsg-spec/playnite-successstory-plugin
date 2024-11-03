@@ -18,6 +18,7 @@ using Playnite.SDK.Models;
 using System.IO;
 using System.Windows.Documents;
 using System.Drawing.Imaging;
+using SuccessStory.Models.Xbox;
 
 namespace SuccessStory.Views
 {
@@ -305,13 +306,13 @@ namespace SuccessStory.Views
             try
             {
                 TbControl = ((StackPanel)((FrameworkElement)sender).Parent).Children.OfType<TextBlock>().FirstOrDefault();
-                
+
                 if (TbControl.Background is SolidColorBrush)
                 {
                     Color color = ((SolidColorBrush)TbControl.Background).Color;
                     PART_SelectorColorPicker.SetColors(color);
                 }
-                
+
                 PART_SelectorColor.Visibility = Visibility.Visible;
                 PART_MiscTab.Visibility = Visibility.Collapsed;
             }
@@ -500,6 +501,70 @@ namespace SuccessStory.Views
             }
         }
         #endregion
+
+        #region Xenia folders
+        private void ButtonAddXeniaFolder_Click(object sender, RoutedEventArgs e)
+        {
+            string selectedFolder = API.Instance.Dialogs.SelectFolder();
+            if (!selectedFolder.IsNullOrEmpty())
+            {
+                string xeniaExe = Path.Combine(selectedFolder, "xenia_canary.exe");
+                if (File.Exists(xeniaExe))
+                {
+                    selectedFolder = selectedFolder.TrimEnd('\\') + '\\'; // Add trailing slash
+                    PART_XeniaFolder.Text = selectedFolder;
+                    PluginDatabase.PluginSettings.Settings.XeniaInstallationFolder = selectedFolder;
+                    // Initialize Xbox360 achievements environment
+                    try
+                    {
+                        var xbox360Achievements = new Xbox360Achievements(API.Instance, PluginDatabase.PluginSettings.Settings.XeniaInstallationFolder);
+                        xbox360Achievements.InitializeXeniaEnvironment(xeniaExe);
+                    }
+                    catch (Exception ex)
+                    {
+                        Common.LogError(ex, false, true, PluginDatabase.PluginName);
+                        API.Instance.Dialogs.ShowErrorMessage(ResourceProvider.GetString("LOCSuccessStoryXeniaInitError"), "Success Story");
+                    }
+                }
+                else
+                {
+                    API.Instance.Dialogs.ShowMessage(
+                        ResourceProvider.GetString("LOCSuccessStoryXeniaExeNotFound"),
+                        "Success Story",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            }
+        }
+
+        private void ButtonSelectXeniaFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Xenia Canary|xenia_canary.exe",
+                Title = ResourceProvider.GetString("LOCSuccessStorySelectXeniaExe")
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                string xeniaFolder = Path.GetDirectoryName(dialog.FileName);
+                xeniaFolder = xeniaFolder.TrimEnd('\\') + '\\'; // Add trailing slash
+                PART_XeniaFolder.Text = xeniaFolder;
+                PluginDatabase.PluginSettings.Settings.XeniaInstallationFolder = xeniaFolder;
+                // Initialize Xbox360 achievements environment
+                try
+                {
+                    var xbox360Achievements = new Xbox360Achievements(API.Instance, PluginDatabase.PluginSettings.Settings.XeniaInstallationFolder);
+                    xbox360Achievements.InitializeXeniaEnvironment(dialog.FileName);
+                }
+                catch (Exception ex)
+                {
+                    Common.LogError(ex, false, true, PluginDatabase.PluginName);
+                    API.Instance.Dialogs.ShowErrorMessage(ResourceProvider.GetString("LOCSuccessStoryXeniaInitError"), "Success Story");
+                }
+            }
+        }
+        #endregion
+
     }
 
 

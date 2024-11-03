@@ -29,6 +29,8 @@ namespace SuccessStory
         public bool EnableIntegrationButtonHeader { get; set; } = false;
         public bool EnableIntegrationButtonSide { get; set; } = true;
 
+        public bool HasUpdatedVersion { get; set; } = false; // eFMann - Updates SS version 
+
         public bool EnableGamerScore { get; set; } = true;
 
         [DontSerialize]
@@ -142,6 +144,10 @@ namespace SuccessStory
         public bool EnableRetroAchievements { get; set; } = false;
         public bool EnableRpcs3Achievements { get; set; } = false;
 
+        public bool EnableXbox360Achievements { get; set; } = false;
+        public string XeniaInstallationFolder { get; set; } = string.Empty;
+        public List<Folder> XeniaInstallationFolders { get; set; } = new List<Folder>();
+
         public bool EnableOverwatchAchievements { get; set; } = false;
         public bool EnableSc2Achievements { get; set; } = false;
         public bool EnableWowAchievements { get; set; } = false;
@@ -203,8 +209,8 @@ namespace SuccessStory
 
         public bool UseLocalised { get; set; } = false;
 
-        public Dictionary<Guid, int> ForcedSteamAppIds { get; set; } //eFMann
- 
+        public Dictionary<Guid, int> ForcedSteamAppIds { get; set; } // eFMann - store Steam AppIds for forced Steam games
+        
         public SteamSettings SteamApiSettings { get; set; } = new SteamSettings();
         public EpicSettings EpicSettings { get; set; } = new EpicSettings();
         #endregion

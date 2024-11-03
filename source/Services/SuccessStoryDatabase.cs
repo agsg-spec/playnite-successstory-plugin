@@ -24,6 +24,7 @@ using CommonPluginsShared.Extensions;
 using System.Threading.Tasks;
 using System.Reflection;
 using SuccessStory.Models.Stats;
+using CommonPluginsShared.Interfaces;
 
 namespace SuccessStory.Services
 {
@@ -50,6 +51,7 @@ namespace SuccessStory.Services
                             { AchievementSource.Playstation, new PSNAchievements() },
                             { AchievementSource.RetroAchievements, new RetroAchievements() },
                             { AchievementSource.RPCS3, new Rpcs3Achievements() },
+                            { AchievementSource.Xbox360, new Xbox360Achievements() },
                             { AchievementSource.Starcraft2, new Starcraft2Achievements() },
                             { AchievementSource.Steam, new SteamAchievements() },
                             { AchievementSource.Xbox, new XboxAchievements() },
@@ -138,6 +140,19 @@ namespace SuccessStory.Services
                 gameAchievements = Get(game, true);
                 if (gameAchievements != null && gameAchievements.HasData)
                 {
+                    // eFMann - added Xbox360/Xenia
+                    if (PlayniteTools.GameUseXbox360(game) && PluginSettings.Settings.EnableXbox360Achievements)
+                    {
+                        Xbox360Achievements xbox360Achievements = new Xbox360Achievements();
+                        if (xbox360Achievements.IsConfigured())
+                        {
+                            gameAchievements = xbox360Achievements.GetAchievements(game);
+                            if (gameAchievements?.HasAchievements ?? false)
+                            {
+                                return gameAchievements;
+                            }
+                        }
+                    }
                     if (gameAchievements.SourcesLink?.Name.IsEqual("steam") ?? false)
                     {
                         string str = gameAchievements.SourcesLink?.Url.Replace("https://steamcommunity.com/stats/", string.Empty).Replace("/achievements", string.Empty);
@@ -370,6 +385,7 @@ namespace SuccessStory.Services
             Epic,
             Origin,
             Xbox,
+            Xbox360,
             RetroAchievements,
             RPCS3,
             Overwatch,
@@ -380,10 +396,14 @@ namespace SuccessStory.Services
         }
 
         private static AchievementSource GetAchievementSourceFromLibraryPlugin(SuccessStorySettings settings, Game game)
-        {
+        {   
             ExternalPlugin pluginType = PlayniteTools.GetPluginType(game.PluginId);
             if (pluginType == ExternalPlugin.None)
             {
+                if (settings.EnableXbox360Achievements && GameUseXbox360(game)) // eFMann - added Xbox350 source
+                {
+                    return AchievementSource.Xbox360;
+                }
                 if (game.Source?.Name?.Contains("Xbox Game Pass", StringComparison.OrdinalIgnoreCase) ?? false)
                 {
                     return AchievementSource.Xbox;
@@ -397,7 +417,7 @@ namespace SuccessStory.Services
             }
 
             switch (pluginType)
-            {
+            {                
                 case ExternalPlugin.BattleNetLibrary:
                     switch (game.Name.ToLowerInvariant())
                     {
@@ -469,6 +489,10 @@ namespace SuccessStory.Services
                     break;
 
                 case ExternalPlugin.XboxLibrary:
+                    if (settings.EnableXbox360Achievements && GameUseXbox360(game)) // eFMann
+                    {
+                        return AchievementSource.Xbox360;
+                    }
                     if (settings.EnableXbox)
                     {
                         return AchievementSource.Xbox;
@@ -526,9 +550,10 @@ namespace SuccessStory.Services
                 {
                     continue;
                 }
-                else
+
+                if (PlayniteTools.GameUseXbox360(game) && settings.EnableXbox360Achievements)
                 {
-                    achievementSource = AchievementSource.RetroAchievements;
+                    return AchievementSource.Xbox360;
                 }
 
                 if (PlayniteTools.GameUseRpcs3(game) && settings.EnableRpcs3Achievements)
@@ -536,6 +561,11 @@ namespace SuccessStory.Services
                     return AchievementSource.RPCS3;
                 }
 
+                //else
+                //{
+                    //achievementSource = AchievementSource.RetroAchievements;
+                //}
+                                                            
                 // TODO With the emulator migration problem emulator.BuiltInConfigId is null
                 // TODO emulator.BuiltInConfigId = "retroarch" is limited; other emulators has RA
                 if (game.Platforms?.Count > 0)
@@ -746,7 +776,7 @@ namespace SuccessStory.Services
             ActionAfterRefresh(webItem);
         }
 
-        internal override void Refresh(List<Guid> ids, string message)
+        internal override void Refresh(IEnumerable<Guid> ids, string message)
         {
             GlobalProgressOptions options = new GlobalProgressOptions($"{PluginName} - {message}")
             {
@@ -762,7 +792,7 @@ namespace SuccessStory.Services
                 Stopwatch stopWatch = new Stopwatch();
                 stopWatch.Start();
 
-                a.ProgressMaxValue = ids.Count;
+                a.ProgressMaxValue = ids.Count();
 
                 string cancelText = string.Empty;
                 foreach (Guid id in ids)
@@ -800,7 +830,7 @@ namespace SuccessStory.Services
                 }
                 stopWatch.Stop();
                 TimeSpan ts = stopWatch.Elapsed;
-                Logger.Info($"Task Refresh(){cancelText} - {string.Format("{0:00}:{1:00}.{2:00}", ts.Minutes, ts.Seconds, ts.Milliseconds / 10)} for {a.CurrentProgressValue}/{ids.Count} items");
+                Logger.Info($"Task Refresh(){cancelText} - {string.Format("{0:00}:{1:00}.{2:00}", ts.Minutes, ts.Seconds, ts.Milliseconds / 10)} for {a.CurrentProgressValue}/{ids.Count()} items");
 
                 Database.EndBufferUpdate();
                 API.Instance.Database.EndBufferUpdate();
@@ -823,15 +853,21 @@ namespace SuccessStory.Services
                 }
             }
 
-            // Set to Beaten
+            ChangeCompletionStatus(game);
+
+            API.Instance.Database.Games.Update(game);
+        }
+
+        public void ChangeCompletionStatus(Game game)
+        {
             if (PluginSettings.Settings.CompletionStatus100Percent != null && PluginSettings.Settings.Auto100PercentCompleted)
             {
-                if ((item?.HasAchievements ?? false) && (item?.Is100Percent ?? false))
+                GameAchievements gameAchievements = Get(game, true);
+                if ((gameAchievements?.HasAchievements ?? false) && (gameAchievements?.Is100Percent ?? false))
                 {
                     game.CompletionStatusId = PluginSettings.Settings.CompletionStatus100Percent.Id;
                 }
             }
-
             API.Instance.Database.Games.Update(game);
         }
 
@@ -980,22 +1016,19 @@ namespace SuccessStory.Services
 
 
         #region Tag system
-        public override void AddTag(Game game, bool noUpdate = false)
+        public override void AddTag(Game game)
         {
-            GetPluginTags();
-            GameAchievements gameAchievements = Get(game, true);
-
-            if (gameAchievements.HasAchievements)
+            GameAchievements item = Get(game, true);
+            if (item.HasAchievements)
             {
                 try
                 {
-                    if (gameAchievements.EstimateTime == null)
+                    if (item.EstimateTime == null)
                     {
                         return;
                     }
 
-                    Guid? TagId = FindGoodPluginTags(gameAchievements.EstimateTime.EstimateTimeMax);
-
+                    Guid? TagId = FindGoodPluginTags(string.Empty);
                     if (TagId != null)
                     {
                         if (game.TagIds != null)
@@ -1006,22 +1039,31 @@ namespace SuccessStory.Services
                         {
                             game.TagIds = new List<Guid> { (Guid)TagId };
                         }
-
-                        if (!noUpdate)
-                        {
-                            Application.Current.Dispatcher?.Invoke(() =>
-                            {
-                                API.Instance.Database.Games.Update(game);
-                                game.OnPropertyChanged();
-                            }, DispatcherPriority.Send);
-                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     Common.LogError(ex, false, $"Tag insert error with {game.Name}", true, PluginName, string.Format(ResourceProvider.GetString("LOCCommonNotificationTagError"), game.Name));
+                    return;
                 }
             }
+            else if (TagMissing)
+            {
+                if (game.TagIds != null)
+                {
+                    game.TagIds.Add((Guid)AddNoDataTag());
+                }
+                else
+                {
+                    game.TagIds = new List<Guid> { (Guid)AddNoDataTag() };
+                }
+            }
+
+            API.Instance.MainView.UIDispatcher?.Invoke(() =>
+            {
+                API.Instance.Database.Games.Update(game);
+                game.OnPropertyChanged();
+            });
         }
 
         private Guid? FindGoodPluginTags(int estimateTimeMax)
@@ -1108,7 +1150,7 @@ namespace SuccessStory.Services
 
         public override void GetSelectData()
         {
-            OptionsDownloadData View = new OptionsDownloadData();
+            OptionsDownloadData View = new OptionsDownloadData(PluginDatabase);
             Window windowExtension = PlayniteUiHelper.CreateExtensionWindow(PluginName + " - " + ResourceProvider.GetString("LOCCommonSelectData"), View);
             _ = windowExtension.ShowDialog();
 
