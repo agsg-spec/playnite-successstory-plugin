@@ -53,7 +53,7 @@ namespace SuccessStory.Clients
         private static string PsnDataPath { get; set; }
 
         public string CommunicationId { get; set; }
-        
+
 
         private static string UrlBase => @"https://m.np.playstation.com/api/trophy/v1";
         private static string UrlTrophiesDetails => UrlBase + @"/npCommunicationIds/{0}/trophyGroups/all/trophies";
@@ -72,7 +72,7 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Achievement> AllAchievements = new List<Achievement>();
 
             string Url = string.Empty;
             string UrlDetails = string.Empty;
@@ -187,12 +187,12 @@ namespace SuccessStory.Clients
                                 break;
                         }
 
-                        AllAchievements.Add(new Achievements
+                        AllAchievements.Add(new Achievement
                         {
                             Name = trophie.trophyName.IsNullOrEmpty() ? ResourceProvider.GetString("LOCSuccessStoryHiddenTrophy") : trophie.trophyName,
                             Description = trophie.trophyDetail,
                             UrlUnlocked = trophie.trophyIconUrl.IsNullOrEmpty() ? "hidden_trophy.png" : trophie.trophyIconUrl,
-                            DateUnlocked = (trophieUser?.earnedDateTime == null) ? default(DateTime) : trophieUser.earnedDateTime,
+                            DateUnlocked = (trophieUser?.earnedDateTime == null) ? (DateTime?)null : trophieUser.earnedDateTime,
                             Percent = Percent == 0 ? 100 : Percent,
                             GamerScore = GamerScore
                         });
@@ -207,7 +207,7 @@ namespace SuccessStory.Clients
             }
             else
             {
-                ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsPsnNoAuthenticate"), ExternalPlugin.PSNLibrary);
+                ShowNotificationPluginNoAuthenticate(ExternalPlugin.PSNLibrary);
             }
 
 
@@ -246,7 +246,7 @@ namespace SuccessStory.Clients
                 catch (Exception ex)
                 {
                     Common.LogError(ex, true);
-                    ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsPsnNoAuthenticate"), ExternalPlugin.PSNLibrary);
+                    ShowNotificationPluginNoAuthenticate(ExternalPlugin.PSNLibrary);
                     return false;
                 }
 
@@ -256,12 +256,12 @@ namespace SuccessStory.Clients
 
                     if (!(bool)CachedConfigurationValidationResult)
                     {
-                        ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsPsnNoAuthenticate"), ExternalPlugin.PSNLibrary);
+                        ShowNotificationPluginNoAuthenticate(ExternalPlugin.PSNLibrary);
                     }
                 }
                 else if (!(bool)CachedConfigurationValidationResult)
                 {
-                    ShowNotificationPluginErrorMessage();
+                    ShowNotificationPluginErrorMessage(ExternalPlugin.PSNLibrary);
                 }
 
                 return (bool)CachedConfigurationValidationResult;

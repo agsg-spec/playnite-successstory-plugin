@@ -33,7 +33,7 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Achievement> AllAchievements = new List<Achievement>();
 
             try
             {
@@ -68,7 +68,7 @@ namespace SuccessStory.Clients
                         {
                             genshinAchievements.ForEach(x =>
                             {
-                                AllAchievements.Add(new Achievements
+                                AllAchievements.Add(new Achievement
                                 {
                                     ApiName = x.Id.ToString(),
                                     Name = x.Name,
@@ -166,6 +166,64 @@ namespace SuccessStory.Clients
             return gameAchievements;
         }
 
+
+        public bool ImportAchievements(Game game)
+        {
+            string path = API.Instance.Dialogs.SelectFile("JSON (.json)|*.json");
+            if (!string.IsNullOrWhiteSpace(path) && path.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
+            {
+                bool done = false;
+                GameAchievements gameAchievements = GetAchievements(game);
+
+                if (Serialization.TryFromJsonFile(path, out PaimonMoeLocalData paimonMoeLocalData))
+                {
+                    if (paimonMoeLocalData?.Achievement != null)
+                    {
+                        paimonMoeLocalData.Achievement.ForEach(x =>
+                        {
+                            x.Value.ForEach(y =>
+                            {
+                                Achievement item = gameAchievements.Items.FirstOrDefault(z => z.ApiName == y.Key && y.Value);
+                                if (item != null)
+                                {
+                                    item.DateUnlocked = new DateTime(1982, 12, 15, 0, 0, 0, 0);
+                                }
+                            });
+                        });
+                        done = true;
+                    }
+                }
+
+                if (Serialization.TryFromJsonFile(path, out SeelieMeLocalData seelieMeLocalData))
+                {
+                    if (seelieMeLocalData?.Achievements != null)
+                    {
+                        seelieMeLocalData.Achievements.ForEach(x =>
+                        {
+                            if (x.Value.Done)
+                            {
+                                Achievement item = gameAchievements.Items.FirstOrDefault(z => z.ApiName == x.Key);
+                                if (item != null)
+                                {
+                                    item.DateUnlocked = new DateTime(1982, 12, 15, 0, 0, 0, 0);
+                                }
+                            }
+                        });
+                        done = true;
+                    }
+                }
+
+                if (done)
+                {
+                    PluginDatabase.Update(gameAchievements);
+                    _ = API.Instance.Dialogs.ShowMessage(ResourceProvider.GetString("LOCImportCompleted"), ResourceProvider.GetString("LOCSuccessStory"));
+                    return true;
+                }
+            }
+
+            _ = API.Instance.Dialogs.ShowErrorMessage(ResourceProvider.GetString("LOCImportError"), ResourceProvider.GetString("LOCSuccessStory"));
+            return false;
+        }
 
         #region Configuration
         public override bool ValidateConfiguration()

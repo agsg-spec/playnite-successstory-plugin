@@ -26,6 +26,7 @@ using CommonPlayniteShared.Common;
 using AngleSharp.Dom;
 using CommonPluginsStores.Models;
 using System.Collections.ObjectModel;
+using static CommonPluginsShared.PlayniteTools;
 
 namespace SuccessStory.Clients
 {
@@ -57,9 +58,9 @@ namespace SuccessStory.Clients
 
 
         public override GameAchievements GetAchievements(Game game)
-        {
+        {            
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Models.Achievement> AllAchievements = new List<Models.Achievement>();
             List<GameStats> AllStats = new List<GameStats>();
 
             uint appId = 0;
@@ -67,20 +68,20 @@ namespace SuccessStory.Clients
 
             // Get Steam configuration if exist.
             if (!IsConfigured())
-            {
+            {                
                 return gameAchievements;
             }
 
             Common.LogDebug(true, $"Steam.GetAchievements() - IsLocal : {IsLocal}, IsManual : {IsManual}, HasApiKey: {!SteamApi.CurrentAccountInfos.ApiKey.IsNullOrEmpty()}, IsPrivate: {SteamApi.CurrentAccountInfos.IsPrivate}");
             if (!IsLocal)
-            {
+            {               
                 Logger.Info($"SteamApi.GetAchievements({game.Name}, {game.GameId})");
                 ObservableCollection<GameAchievement> steamAchievements = SteamApi.GetAchievements(game.GameId, SteamApi.CurrentAccountInfos);
 
                 if (steamAchievements?.Count > 0 && uint.TryParse(game.GameId, out appId))
                 {
                     // Check private game
-                    if (steamAchievements.Count(x => !(x.DateUnlocked == default || x.DateUnlocked == null || x.DateUnlocked.ToString().Contains("0001"))) == 0 && !PluginDatabase.PluginSettings.Settings.SteamApiSettings.UseAuth)
+                    if (steamAchievements.Count(x => !(x.DateUnlocked == default || x.DateUnlocked == null || x.DateUnlocked.ToString().Contains("0001"))) == 0 && !PluginDatabase.PluginSettings.Settings.SteamStoreSettings.UseAuth)
                     {
                         Logger.Info($"No unlocked achievement, check if the game is private - {game.Name} - {game.GameId}");
                         bool gameIsPrivate = SteamApi.CheckGameIsPrivate(appId, SteamApi.CurrentAccountInfos);
@@ -96,7 +97,7 @@ namespace SuccessStory.Clients
                         }
                     }
 
-                    AllAchievements = steamAchievements.Select(x => new Achievements
+                    AllAchievements = steamAchievements.Select(x => new Models.Achievement
                     {
                         ApiName = x.Id,
                         Name = x.Name,
@@ -106,7 +107,7 @@ namespace SuccessStory.Clients
                         Description = x.Description,
                         UrlUnlocked = x.UrlUnlocked,
                         UrlLocked = x.UrlLocked,
-                        DateUnlocked = x.DateUnlocked,
+                        DateUnlocked = x.DateUnlocked.ToString().Contains(default(DateTime).ToString()) ? (DateTime?)null : x.DateUnlocked,
                         IsHidden = x.IsHidden,
                         Percent = x.Percent,
                         GamerScore = x.GamerScore
@@ -140,9 +141,9 @@ namespace SuccessStory.Clients
                 }
             }
             else
-            {
+            {               
                 if (IsManual)
-                {
+                {                   
                     appId = SteamApi.GetAppId(game.Name);
                     gameAchievements = GetManual(appId, game);
                 }
@@ -154,10 +155,10 @@ namespace SuccessStory.Clients
                     appId = se.GetAppId();
 
                     if (temp.Items.Count > 0)
-                    {
+                    {                        
                         for (int i = 0; i < temp.Items.Count; i++)
                         {
-                            AllAchievements.Add(new Achievements
+                            AllAchievements.Add(new Models.Achievement
                             {
                                 Name = temp.Items[i].Name,
                                 ApiName = temp.Items[i].ApiName,
@@ -170,7 +171,7 @@ namespace SuccessStory.Clients
 
                         gameAchievements.Items = AllAchievements;
                         gameAchievements.ItemsStats = temp.ItemsStats;
-                    }
+                    }                   
                 }
 
                 // Set source link
@@ -183,8 +184,8 @@ namespace SuccessStory.Clients
                         Url = UrlBase + $"/stats/{appId}/achievements"
                     };
                 }
-            }
-
+            }   
+            
             SetRarity(appId, gameAchievements);
             //SetMissingDescription(appId, gameAchievements);
             gameAchievements.SetRaretyIndicator();
@@ -195,7 +196,7 @@ namespace SuccessStory.Clients
         public GameAchievements GetAchievements(Game game, uint appId)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Models.Achievement> AllAchievements = new List<Models.Achievement>();
 
             // Get Steam configuration if exist.
             if (!IsConfigured())
@@ -224,7 +225,7 @@ namespace SuccessStory.Clients
                 {
                     for (int i = 0; i < temp.Items.Count; i++)
                     {
-                        AllAchievements.Add(new Achievements
+                        AllAchievements.Add(new Models.Achievement
                         {
                             Name = temp.Items[i].Name,
                             ApiName = temp.Items[i].ApiName,
@@ -267,7 +268,7 @@ namespace SuccessStory.Clients
         private GameAchievements GetManual(uint appId, Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Models.Achievement> AllAchievements = new List<Models.Achievement>();
 
             if (appId == 0)
             {
@@ -279,7 +280,7 @@ namespace SuccessStory.Clients
             {
                 Logger.Info($"SteamApi.GetAchievements()");
 
-                AllAchievements = steamAchievements.Select(x => new Achievements
+                AllAchievements = steamAchievements.Select(x => new Models.Achievement
                 {
                     ApiName = x.Id,
                     Name = x.Name,
@@ -312,7 +313,7 @@ namespace SuccessStory.Clients
                 {
                     foreach (var steamAchievement in steamAchievements)
                     {
-                        Achievements found = gameAchievements.Items?.Find(y => y.ApiName.IsEqual(steamAchievement.Id));
+                        Models.Achievement found = gameAchievements.Items?.Find(y => y.ApiName.IsEqual(steamAchievement.Id)); // eFMann - might need editing
                         if (found != null)
                         {
                             // Set both GamerScore and Percent for rarity
@@ -358,6 +359,18 @@ namespace SuccessStory.Clients
         // TODO Rewrite
         public override bool ValidateConfiguration()
         {
+            // eFMann - If we're in Local mode, skip regular Steam validation
+            if (IsLocal)
+            {
+                return !string.IsNullOrEmpty(SteamApi?.CurrentAccountInfos?.ApiKey);
+            }
+
+            if (!PluginDatabase.PluginSettings.Settings.PluginState.SteamIsEnabled)
+            {
+                ShowNotificationPluginDisable(ResourceProvider.GetString("LOCSuccessStoryNotificationsSteamDisabled"));
+                return false;
+            }
+
             if (!PluginDatabase.PluginSettings.Settings.PluginState.SteamIsEnabled)
             {
                 ShowNotificationPluginDisable(ResourceProvider.GetString("LOCSuccessStoryNotificationsSteamDisabled"));
@@ -369,7 +382,7 @@ namespace SuccessStory.Clients
                 {
                     if (!IsConfigured())
                     {
-                        ShowNotificationPluginNoConfiguration(ResourceProvider.GetString("LOCSuccessStoryNotificationsSteamBadConfig"));
+                        ShowNotificationPluginNoConfiguration();
                         CachedConfigurationValidationResult = false;
                     }
 
@@ -379,7 +392,7 @@ namespace SuccessStory.Clients
                         Thread.Sleep(2000);
                         if (SteamApi.CurrentAccountInfos.IsPrivate && !IsConnected())
                         {
-                            ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsSteamNoAuthenticate"), PlayniteTools.ExternalPlugin.SuccessStory);
+                            ShowNotificationPluginNoAuthenticate(PlayniteTools.ExternalPlugin.SuccessStory);
                             CachedConfigurationValidationResult = false;
                         }
                     }
@@ -392,12 +405,12 @@ namespace SuccessStory.Clients
 
                     if (!(bool)CachedConfigurationValidationResult)
                     {
-                        ShowNotificationPluginErrorMessage();
+                        ShowNotificationPluginErrorMessage(ExternalPlugin.SuccessStory);
                     }
                 }
                 else if (!(bool)CachedConfigurationValidationResult)
                 {
-                    ShowNotificationPluginErrorMessage();
+                    ShowNotificationPluginErrorMessage(ExternalPlugin.SuccessStory);
                 }
 
                 return (bool)CachedConfigurationValidationResult;
@@ -419,6 +432,12 @@ namespace SuccessStory.Clients
 
         public override bool IsConfigured()
         {
+            // eFMann - If we're in Local mode, only check for API key
+            if (IsLocal)
+            {
+                return !string.IsNullOrEmpty(SteamApi?.CurrentAccountInfos?.ApiKey);
+            }
+
             return SteamApi.IsConfigured();
         }
 
@@ -594,7 +613,7 @@ namespace SuccessStory.Clients
         */
 
 
-        private List<Achievements> GetProgressionByWeb(List<Achievements> Achievements, string Url, bool isRetry = false)
+        private List<Models.Achievement> GetProgressionByWeb(List<Models.Achievement> Achievements, string Url, bool isRetry = false)
         {
             string ResultWeb = string.Empty;
             try
@@ -632,7 +651,7 @@ namespace SuccessStory.Clients
                             double.TryParse(steamAchievementData.Progress["max_val"].ToString(), out double max);
                             double.TryParse(steamAchievementData.Progress["currentVal"].ToString(), out double val);
 
-                            Achievements found = Achievements.Find(x => x.ApiName.IsEqual(steamAchievementData.RawName));
+                            Models.Achievement found = Achievements.Find(x => x.ApiName.IsEqual(steamAchievementData.RawName));
                             if (found != null)
                             {
                                 found.Progression = new AchProgression
@@ -657,7 +676,7 @@ namespace SuccessStory.Clients
                             double.TryParse(steamAchievementData.Progress["max_val"].ToString(), out double max);
                             double.TryParse(steamAchievementData.Progress["currentVal"].ToString(), out double val);
 
-                            Achievements found = Achievements.Find(x => x.ApiName.IsEqual(steamAchievementData.RawName));
+                            Models.Achievement found = Achievements.Find(x => x.ApiName.IsEqual(steamAchievementData.RawName));
                             if (found != null)
                             {
                                 found.Progression = new AchProgression
@@ -688,7 +707,7 @@ namespace SuccessStory.Clients
                             _ = double.TryParse(data[1].Trim().Replace(",", string.Empty), out double max);
                             _ = double.TryParse(data[0].Trim().Replace(",", string.Empty), out double val);
 
-                            Achievements found = Achievements.Find(x => x.Name.IsEqual(Name));
+                            Models.Achievement found = Achievements.Find(x => x.Name.IsEqual(Name));
                             if (found != null)
                             {
                                 found.Progression = new AchProgression

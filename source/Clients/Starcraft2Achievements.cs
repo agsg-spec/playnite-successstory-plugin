@@ -38,7 +38,7 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Models.Achievement> AllAchievements = new List<Models.Achievement>();
             List<GameStats> AllStats = new List<GameStats>();
 
             if (IsConnected() && UserSc2Id != 0)
@@ -73,7 +73,7 @@ namespace SuccessStory.Clients
                     try
                     {
                         string ApiName = earnedAchievement.achievementId;
-                        Achievement achievement = battleNetSc2Ach.Achievements.FirstOrDefault(x => x.Id == ApiName);
+                        Models.StarCraft2.Achievement achievement = battleNetSc2Ach.Achievements.FirstOrDefault(x => x.Id == ApiName);
                         string Name = achievement.Title;
                         string Description = achievement.Description;
                         string UrlImage = achievement.ImageUrl;
@@ -89,7 +89,7 @@ namespace SuccessStory.Clients
                         string ParentCategory = catParent?.Name;
 
 
-                        AllAchievements.Add(new Achievements
+                        AllAchievements.Add(new Models.Achievement
                         {
                             ApiName = ApiName,
                             Name = Name,
@@ -109,7 +109,7 @@ namespace SuccessStory.Clients
             }
             else
             {
-                ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsBattleNetNoAuthenticateSc2"), ExternalPlugin.BattleNetLibrary);
+                ShowNotificationPluginNoAuthenticate(ExternalPlugin.BattleNetLibrary);
             }
 
             gameAchievements.Items = AllAchievements;
@@ -214,15 +214,16 @@ namespace SuccessStory.Clients
 
 
         #region Errors
-        public override void ShowNotificationPluginNoAuthenticate(string Message, ExternalPlugin PluginSource)
+        public override void ShowNotificationPluginNoAuthenticate(ExternalPlugin PluginSource)
         {
+            string message = string.Format(ResourceProvider.GetString("LOCCommonStoresNoAuthenticate"), ClientName);
             LastErrorId = $"{PluginDatabase.PluginName}-{ClientName.RemoveWhiteSpace()}-noauthenticate";
-            LastErrorMessage = Message;
+            LastErrorMessage = message;
             Logger.Warn($"{ClientName} user is not authenticated");
 
             API.Instance.Notifications.Add(new NotificationMessage(
                 $"{PluginDatabase.PluginName}-{ClientName.RemoveWhiteSpace()}-disabled",
-                $"{PluginDatabase.PluginName}\r\n{Message}",
+                $"{PluginDatabase.PluginName}\r\n{message}",
                 NotificationType.Error,
                 () =>
                 {

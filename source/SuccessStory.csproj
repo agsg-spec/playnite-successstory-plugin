@@ -52,6 +52,9 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="FuzzySharp">
+      <Version>2.0.2</Version>
+    </PackageReference>
     <PackageReference Include="System.Data.SQLite" Version="1.0.115.5" />
     <PackageReference Include="System.Data.SQLite" Version="1.0.115.5" />
     <Reference Include="akr.WPF.Controls.ColorPicker">
@@ -130,6 +133,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Clients\AchievementWatcherAchievements.cs" />
+    <Compile Include="Clients\ShadPS4Achievements.cs" />
     <Compile Include="Clients\Xbox360Achievements.cs" />
     <Compile Include="Controls\Customs\AchievementImage.xaml.cs">
       <DependentUpon>AchievementImage.xaml</DependentUpon>
@@ -145,6 +149,9 @@
     </Compile>
     <Compile Include="Controls\PluginCompactList.xaml.cs">
       <DependentUpon>PluginCompactList.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\PluginHeatmap.xaml.cs">
+      <DependentUpon>PluginHeatmap.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\PluginList.xaml.cs">
       <DependentUpon>PluginList.xaml</DependentUpon>
@@ -164,7 +171,10 @@
     <Compile Include="Converters\Crc32.cs" />
     <Compile Include="Converters\SetColorConverter.cs" />
     <Compile Include="Models\GenshinImpact\PaimonMoeAchievements.cs" />
+    <Compile Include="Models\GenshinImpact\PaimonMoeLocalData.cs" />
+    <Compile Include="Models\GenshinImpact\SeelieMeLocalData.cs" />
     <Compile Include="Models\PSN\TropyTitlesResponse.cs" />
+    <Compile Include="Models\RarityCache.cs" />
     <Compile Include="Models\RetroAchievements\RaConsole.cs" />
     <Compile Include="Models\RetroAchievements\RaGame.cs" />
     <Compile Include="Models\RetroAchievements\RaMd5List.cs" />
@@ -181,8 +191,17 @@
     <Compile Include="playnite-plugincommon\CommonPluginsControls\Controls\ControlPickerGradient.xaml.cs">
       <DependentUpon>ControlPickerGradient.xaml</DependentUpon>
     </Compile>
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Controls\MediaElementExtend.xaml.cs">
+      <DependentUpon>MediaElementExtend.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Controls\ProgressBarExtend.xaml.cs">
+      <DependentUpon>ProgressBarExtend.xaml</DependentUpon>
+    </Compile>
     <Compile Include="playnite-plugincommon\CommonPluginsControls\Controls\RangeSlider.xaml.cs">
       <DependentUpon>RangeSlider.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Controls\SliderWithPointer.xaml.cs">
+      <DependentUpon>SliderWithPointer.xaml</DependentUpon>
     </Compile>
     <Compile Include="playnite-plugincommon\CommonPluginsControls\Controls\TextBlockTrimmed.xaml.cs">
       <DependentUpon>TextBlockTrimmed.xaml</DependentUpon>
@@ -207,6 +226,9 @@
     <Compile Include="playnite-plugincommon\CommonPluginsControls\PlayniteControls\DdItemListSelectionBox.xaml.cs">
       <DependentUpon>DdItemListSelectionBox.xaml</DependentUpon>
     </Compile>
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\PlayniteControls\NullableIntBox.xaml.cs">
+      <DependentUpon>NullableIntBox.xaml</DependentUpon>
+    </Compile>
     <Compile Include="playnite-plugincommon\CommonPluginsControls\PlayniteControls\NumericBox.xaml.cs">
       <DependentUpon>NumericBox.xaml</DependentUpon>
     </Compile>
@@ -217,12 +239,28 @@
       <DependentUpon>PanelView.xaml</DependentUpon>
     </Compile>
     <Compile Include="playnite-plugincommon\CommonPluginsControls\Stores\Epic\PanelViewModel.cs" />
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Stores\Gog\PanelView.xaml.cs">
+      <DependentUpon>PanelView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Stores\Gog\PanelViewModel.cs" />
     <Compile Include="playnite-plugincommon\CommonPluginsControls\Stores\Steam\PanelView.xaml.cs">
       <DependentUpon>PanelView.xaml</DependentUpon>
     </Compile>
     <Compile Include="playnite-plugincommon\CommonPluginsControls\Stores\Steam\PanelViewModel.cs" />
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Views\ListDataUpdated.xaml.cs">
+      <DependentUpon>ListDataUpdated.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Views\ListWithNoData.xaml.cs">
+      <DependentUpon>ListWithNoData.xaml</DependentUpon>
+    </Compile>
     <Compile Include="playnite-plugincommon\CommonPluginsControls\Views\OptionsDownloadData.xaml.cs">
       <DependentUpon>OptionsDownloadData.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Views\SelectVariable.xaml.cs">
+      <DependentUpon>SelectVariable.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="playnite-plugincommon\CommonPluginsControls\Views\TransfertData.xaml.cs">
+      <DependentUpon>TransfertData.xaml</DependentUpon>
     </Compile>
     <Compile Include="Services\NDS.cs" />
     <Compile Include="Services\SuccessStoryDatabase.cs" />
@@ -250,9 +288,6 @@
     </Compile>
     <Compile Include="Views\SuccessStoryCategoryView.xaml.cs">
       <DependentUpon>SuccessStoryCategoryView.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Views\SuccessStoryForceEpicNameSpace.xaml.cs">
-      <DependentUpon>SuccessStoryForceEpicNameSpace.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\SuccessStoryForceSteamAppId.xaml.cs">
       <DependentUpon>SuccessStoryForceSteamAppId.xaml</DependentUpon>
@@ -289,6 +324,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Controls\PluginCompactList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\PluginHeatmap.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -415,7 +454,19 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\Controls\MediaElementExtend.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\Controls\ProgressBarExtend.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="playnite-plugincommon\CommonPluginsControls\Controls\RangeSlider.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\Controls\SliderWithPointer.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -447,6 +498,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\PlayniteControls\NullableIntBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="playnite-plugincommon\CommonPluginsControls\PlayniteControls\NumericBox.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -459,11 +514,31 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\Stores\Gog\PanelView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="playnite-plugincommon\CommonPluginsControls\Stores\Steam\PanelView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\Views\ListDataUpdated.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\Views\ListWithNoData.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="playnite-plugincommon\CommonPluginsControls\Views\OptionsDownloadData.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\Views\SelectVariable.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="playnite-plugincommon\CommonPluginsControls\Views\TransfertData.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -490,10 +565,6 @@
     <Page Include="Views\SuccessStoryCategoryView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Views\SuccessStoryForceEpicNameSpace.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\SuccessStoryForceSteamAppId.xaml">
       <SubType>Designer</SubType>
@@ -564,7 +635,7 @@
   <ItemGroup>
     <!-- Compile Models\* -->
     <Compile Include="Models\GenshinImpact\GenshinImpactAchievementsCategory.cs" />
-    <Compile Include="Models\Achievements.cs" />
+    <Compile Include="Models\Achievement.cs" />
     <Compile Include="Models\AchRaretyStats.cs" />
     <Compile Include="Models\StarCraft2\BattleNetSc2Ach.cs" />
     <Compile Include="Models\StarCraft2\BattleNetSc2Profil.cs" />
@@ -898,6 +969,9 @@
     <None Include="Resources\GenshinImpact\9.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="playnite-plugincommon\CommonPluginsControls\Properties\" />
   </ItemGroup>
   <Import Project="playnite-plugincommon\CommonPlayniteShared\CommonPlayniteShared.projitems" Label="Shared" />
   <Import Project="playnite-plugincommon\CommonPluginsShared\CommonPluginsShared.projitems" Label="Shared" />

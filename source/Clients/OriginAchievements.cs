@@ -28,7 +28,7 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Achievement> AllAchievements = new List<Achievement>();
 
             if (IsConnected())
             {
@@ -44,14 +44,14 @@ namespace SuccessStory.Clients
                     ObservableCollection<GameAchievement> originAchievements = OriginApi.GetAchievements(gameInfos.Id2, OriginApi.CurrentAccountInfos);
                     if (originAchievements?.Count > 0)
                     {
-                        AllAchievements = originAchievements.Select(x => new Achievements
+                        AllAchievements = originAchievements.Select(x => new Achievement
                         {
                             ApiName = x.Id,
                             Name = x.Name,
                             Description = x.Description,
                             UrlUnlocked = x.UrlUnlocked,
                             UrlLocked = x.UrlLocked,
-                            DateUnlocked = x.DateUnlocked,
+                            DateUnlocked = x.DateUnlocked.ToString().Contains(default(DateTime).ToString()) ? (DateTime?)null : x.DateUnlocked,
                             Percent = x.Percent,
                             GamerScore = x.GamerScore
                         }).ToList();
@@ -72,7 +72,7 @@ namespace SuccessStory.Clients
             }
             else
             {
-                ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsOriginNoAuthenticate"), ExternalPlugin.OriginLibrary);
+                ShowNotificationPluginNoAuthenticate(ExternalPlugin.OriginLibrary);
             }
 
             gameAchievements.SetRaretyIndicator();
@@ -96,12 +96,12 @@ namespace SuccessStory.Clients
 
                     if (!(bool)CachedConfigurationValidationResult)
                     {
-                        ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsOriginNoAuthenticate"), ExternalPlugin.OriginLibrary);
+                        ShowNotificationPluginNoAuthenticate(ExternalPlugin.OriginLibrary);
                     }
                 }
                 else if (!(bool)CachedConfigurationValidationResult)
                 {
-                    ShowNotificationPluginErrorMessage();
+                    ShowNotificationPluginErrorMessage(ExternalPlugin.OriginLibrary);
                 }
 
                 return (bool)CachedConfigurationValidationResult;
@@ -122,7 +122,7 @@ namespace SuccessStory.Clients
                     CachedIsConnectedResult = false;
                 }
             }
-            
+
             return (bool)CachedIsConnectedResult;
         }
 

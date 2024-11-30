@@ -14,8 +14,7 @@ namespace SuccessStory.Clients
 {
     public class GogAchievements : GenericAchievements
     {
-        protected static readonly Lazy<GogApi> gogApi = new Lazy<GogApi>(() => new GogApi(PluginDatabase.PluginName));
-        internal static GogApi GogApi => gogApi.Value;
+        private GogApi GogApi => SuccessStory.GogApi;
 
 
         public GogAchievements() : base("GOG", CodeLang.GetGogLang(API.Instance.ApplicationSettings.Language))
@@ -27,7 +26,7 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Achievement> AllAchievements = new List<Achievement>();
 
             if (IsConnected())
             {
@@ -36,16 +35,17 @@ namespace SuccessStory.Clients
                     ObservableCollection<GameAchievement> gogAchievements = GogApi.GetAchievements(game.GameId, GogApi.CurrentAccountInfos);
                     if (gogAchievements?.Count > 0)
                     {
-                        AllAchievements = gogAchievements.Select(x => new Achievements
+                        AllAchievements = gogAchievements.Select(x => new Achievement
                         {
                             ApiName = x.Id,
                             Name = x.Name,
                             Description = x.Description,
                             UrlUnlocked = x.UrlUnlocked,
                             UrlLocked = x.UrlLocked,
-                            DateUnlocked = x.DateUnlocked,
+                            DateUnlocked = x.DateUnlocked.ToString().Contains(default(DateTime).ToString()) ? (DateTime?)null : x.DateUnlocked,
                             Percent = x.Percent,
-                            GamerScore = x.GamerScore
+                            GamerScore = x.GamerScore,
+                            IsHidden = x.IsHidden
                         }).ToList();
                         gameAchievements.Items = AllAchievements;
                     }
@@ -53,7 +53,7 @@ namespace SuccessStory.Clients
                     {
                         if (!GogApi.IsUserLoggedIn)
                         {
-                            ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsGogNoAuthenticate"), ExternalPlugin.GogLibrary);
+                            ShowNotificationPluginNoAuthenticate(ExternalPlugin.SuccessStory);
                         }
                     }
 
@@ -71,7 +71,7 @@ namespace SuccessStory.Clients
             }
             else
             {
-                ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsGogNoAuthenticate"), ExternalPlugin.GogLibrary);
+                ShowNotificationPluginNoAuthenticate(ExternalPlugin.SuccessStory);
             }
 
             gameAchievements.SetRaretyIndicator();
@@ -95,7 +95,7 @@ namespace SuccessStory.Clients
 
                     if (!(bool)CachedConfigurationValidationResult)
                     {
-                        ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsGogNoAuthenticate"), ExternalPlugin.GogLibrary);
+                        ShowNotificationPluginNoAuthenticate(ExternalPlugin.SuccessStory);
                     }
                     else
                     {
@@ -103,13 +103,13 @@ namespace SuccessStory.Clients
 
                         if (!(bool)CachedConfigurationValidationResult)
                         {
-                            ShowNotificationPluginNoConfiguration(ResourceProvider.GetString("LOCSuccessStoryNotificationsGogBadConfig"));
+                            ShowNotificationPluginNoConfiguration();
                         }
                     }
                 }
                 else if (!(bool)CachedConfigurationValidationResult)
                 {
-                    ShowNotificationPluginErrorMessage();
+                    ShowNotificationPluginErrorMessage(ExternalPlugin.SuccessStory);
                 }
 
                 return (bool)CachedConfigurationValidationResult;

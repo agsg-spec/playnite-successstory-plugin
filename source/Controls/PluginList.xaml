@@ -46,7 +46,7 @@
                 <ColumnDefinition Width="10" />
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
-            
+
             <Button Grid.Column="1" Name="PART_SortName" Content="&#xea64;" FontFamily="{DynamicResource CommonFont}" FontSize="16" Click="PART_SortName_Click" />
             <Label Grid.Column="1" Name="PART_SortNameOrder" Content="1" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,2,0" />
 
@@ -80,7 +80,7 @@
                                     Tag="{Binding IconHeight}"
                                     Width="{Binding ElementName=PART_GridContener, Path=ActualWidth}"
                                     Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}">
-                
+
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
                         <Setter Property="Template">
@@ -149,7 +149,7 @@
                                                           EnableRaretyIndicator="{Binding EnableRaretyIndicator}"
                                                           DisplayRaretyValue="{Binding DisplayRaretyValue}" />
                             </StackPanel>
-                        
+
                             <Grid Grid.Column="1" Margin="10,0,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -207,7 +207,7 @@
                                                     </Style.Triggers>
                                                 </Style>
                                             </Grid.Style>
-                                        
+
                                             <ProgressBar Minimum="{Binding Progression.Min}" Maximum="{Binding Progression.Max}"
                                                          Value="{Binding Progression.Value}" />
                                             <Label Content="{Binding Progression.Progression}" HorizontalAlignment="Center" />

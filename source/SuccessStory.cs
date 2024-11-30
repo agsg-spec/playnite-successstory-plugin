@@ -1,37 +1,33 @@
-﻿using Playnite.SDK;
+﻿using CommonPlayniteShared.Common;
+using CommonPluginsShared;
+using CommonPluginsShared.Controls;
+using CommonPluginsShared.Extensions;
+using CommonPluginsShared.PlayniteExtended;
+using CommonPluginsStores.Epic;
+using CommonPluginsStores.Gog;
+using CommonPluginsStores.Steam;
+using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
-using CommonPluginsShared;
+using QuickSearch.SearchItems;
+using SuccessStory.Clients;
+using SuccessStory.Controls;
 using SuccessStory.Models;
+using SuccessStory.Models.RetroAchievements;
+using SuccessStory.Services;
 using SuccessStory.Views;
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using CommonPlayniteShared;
-using SuccessStory.Services;
 using System.Windows.Automation;
-using CommonPluginsShared.PlayniteExtended;
-using System.Windows.Media;
-using CommonPluginsShared.Controls;
-using SuccessStory.Controls;
-using CommonPluginsShared.Models;
-using CommonPlayniteShared.Common;
-using System.Reflection;
-using CommonPluginsShared.Extensions;
-using System.Diagnostics;
-using QuickSearch.SearchItems;
-using CommonPluginsStores.Steam;
-using SuccessStory.Clients;
-using SuccessStory.Models.RetroAchievements;
-using CommonPluginsStores.Epic;
-using System.Resources;
-using System.Text.RegularExpressions;
+using System.Windows.Controls;
 
 namespace SuccessStory
 {
@@ -41,12 +37,13 @@ namespace SuccessStory
 
         public static SteamApi SteamApi { get; set; }
         public static EpicApi EpicApi { get; set; }
+        public static GogApi GogApi { get; set; }
 
         internal TopPanelItem TopPanelItem { get; set; }
         internal SidebarItem SidebarItem { get; set; }
-        internal SidebarItem SidebarRaItem { get; set; }
+        internal SidebarItem SidebarRaItem { get; set; }        
         internal SidebarItemControl SidebarItemControl { get; set; }
-        internal SidebarItemControl SidebarRaItemControl { get; set; }
+        internal SidebarItemControl SidebarRaItemControl { get; set; }        
 
         public static bool TaskIsPaused { get; set; } = false;
         private CancellationTokenSource TokenSource => new CancellationTokenSource();
@@ -84,7 +81,7 @@ namespace SuccessStory
             // Initialize top & side bar
             if (API.Instance.ApplicationInfo.Mode == ApplicationMode.Desktop)
             {
-                TopPanelItem = new SuccessStoryTopPanelItem(this);
+                TopPanelItem = new SuccessStoryTopPanelItem(this);                
                 SidebarItem = new SuccessStoryViewSidebar(this);
                 SidebarRaItem = new SuccessStoryViewRaSidebar(this);
             }
@@ -185,7 +182,7 @@ namespace SuccessStory
             {
                 WinIdProperty = ((Window)sender).GetValue(AutomationProperties.AutomationIdProperty).ToString();
 
-                if (WinIdProperty == "WindowSettings" ||WinIdProperty == "WindowExtensions" || WinIdProperty == "WindowLibraryIntegrations")
+                if (WinIdProperty == "WindowSettings" || WinIdProperty == "WindowExtensions" || WinIdProperty == "WindowLibraryIntegrations")
                 {
                     foreach (var achievementProvider in SuccessStoryDatabase.AchievementProviders.Values)
                     {
@@ -218,7 +215,7 @@ namespace SuccessStory
                 PlayniteApi.Dialogs.ShowMessage($"Steam AppId for {game.Name} has been set to {ViewExtension.SteamAppId.Value}.");
             }
         }
-                
+
         #endregion
 
 
@@ -401,7 +398,7 @@ namespace SuccessStory
                         {
                             ForceSteamAppId(GameMenu);
                         }
-                    });                                       
+                    });
 
                     if (PluginSettings.Settings.EnableRetroAchievements && achievementSource == SuccessStoryDatabase.AchievementSource.RetroAchievements)
                     {
@@ -523,6 +520,17 @@ namespace SuccessStory
                                 }
                             });
                         }
+
+                        gameMenuItems.Add(new GameMenuItem
+                        {
+                            MenuSection = ResourceProvider.GetString("LOCSuccessStory"),
+                            Description = ResourceProvider.GetString("LOCImportLabel"),
+                            Action = (mainMenuItem) =>
+                            {
+                                GenshinImpactAchievements genshinImpactAchievements = new GenshinImpactAchievements();
+                                genshinImpactAchievements.ImportAchievements(GameMenu);
+                            }
+                        });
                     }
                 }
 
@@ -838,24 +846,24 @@ namespace SuccessStory
             if (!PluginSettings.Settings.HasUpdatedVersion)
             {
                 try
-                {                    
+                {
                     string extensionPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "extension.yaml");
-                    
+
                     if (File.Exists(extensionPath))
-                    {                        
+                    {
                         string content = File.ReadAllText(extensionPath);
-                        
+
                         // Choose what to rename the version to...
                         string pattern = @"Version: .*";
-                        string replacement = "Version: 3.3.2-eFM.2";                                                
+                        string replacement = "Version: 3.4.1-eFM";
                         string updatedContent = content.Replace(content.Split('\n').First(x => x.StartsWith("Version:")), replacement);
-                        
+
 
                         File.WriteAllText(extensionPath, updatedContent);
-                        
+
                         PluginSettings.Settings.HasUpdatedVersion = true;
-                        SavePluginSettings(PluginSettings.Settings);                        
-                    }                    
+                        SavePluginSettings(PluginSettings.Settings);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -863,9 +871,14 @@ namespace SuccessStory
                 }
             }
 
+            var d = SuccessStoryStats.GetCountUnlocked(StatsType.Day, null, null, false, false);
+            var e = SuccessStoryStats.GetCountUnlocked(StatsType.Month, null, null, false, false);
+            var f = SuccessStoryStats.GetCountUnlocked(StatsType.Source, null, null, false, false);
+
             // StoreAPI intialization
-            SteamApi = new SteamApi(PluginDatabase.PluginName);
+            SteamApi = new SteamApi(PluginDatabase.PluginName, PlayniteTools.ExternalPlugin.SuccessStory);
             SteamApi.SetLanguage(API.Instance.ApplicationSettings.Language);
+            SteamApi.StoreSettings = PluginDatabase.PluginSettings.Settings.SteamStoreSettings;
             if (PluginDatabase.PluginSettings.Settings.EnableSteam)
             {
                 _ = SteamApi.CurrentAccountInfos;
@@ -875,15 +888,20 @@ namespace SuccessStory
                 }
             }
 
-            EpicApi = new EpicApi(PluginDatabase.PluginName);
+            EpicApi = new EpicApi(PluginDatabase.PluginName, PlayniteTools.ExternalPlugin.SuccessStory);
             EpicApi.SetLanguage(API.Instance.ApplicationSettings.Language);
+            EpicApi.StoreSettings = PluginDatabase.PluginSettings.Settings.EpicStoreSettings;
             if (PluginDatabase.PluginSettings.Settings.EnableEpic)
             {
                 _ = EpicApi.CurrentAccountInfos;
-                if (PluginDatabase.PluginSettings.Settings.EpicSettings.UseAuth)
-                {
-                    EpicApi.CurrentAccountInfos.IsPrivate = true;
-                }
+            }
+
+            GogApi = new GogApi(PluginDatabase.PluginName, PlayniteTools.ExternalPlugin.SuccessStory);
+            GogApi.SetLanguage(API.Instance.ApplicationSettings.Language);
+            GogApi.StoreSettings = PluginDatabase.PluginSettings.Settings.GogStoreSettings;
+            if (PluginDatabase.PluginSettings.Settings.EnableGog)
+            {
+                _ = GogApi.CurrentAccountInfos;
             }
 
 

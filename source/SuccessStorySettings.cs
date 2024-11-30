@@ -9,6 +9,8 @@ using System;
 using System.Linq;
 using Playnite.SDK.Models;
 using CommonPluginsShared.Plugins;
+using CommonPluginsStores;
+using System.Runtime;
 
 namespace SuccessStory
 {
@@ -144,6 +146,10 @@ namespace SuccessStory
         public bool EnableRetroAchievements { get; set; } = false;
         public bool EnableRpcs3Achievements { get; set; } = false;
 
+        public bool EnableShadPS4Achievements { get; set; } = false;
+        public string ShadPS4InstallationFolder { get; set; } = string.Empty;
+        public List<Folder> ShadPS4InstallationFolders { get; set; } = new List<Folder>();
+
         public bool EnableXbox360Achievements { get; set; } = false;
         public string XeniaInstallationFolder { get; set; } = string.Empty;
         public List<Folder> XeniaInstallationFolders { get; set; } = new List<Folder>();
@@ -159,6 +165,8 @@ namespace SuccessStory
 
         public string Rpcs3InstallationFolder { get; set; } = string.Empty;
         public List<Folder> Rpcs3InstallationFolders { get; set; } = new List<Folder>();
+
+        
 
         public bool EnableRetroAchievementsView { get; set; } = false;
         public bool EnableOneGameView { get; set; } = true;
@@ -212,7 +220,11 @@ namespace SuccessStory
         public Dictionary<Guid, int> ForcedSteamAppIds { get; set; } // eFMann - store Steam AppIds for forced Steam games
         
         public SteamSettings SteamApiSettings { get; set; } = new SteamSettings();
-        public EpicSettings EpicSettings { get; set; } = new EpicSettings();
+        public EpicSettings EpicSettings { get; set; } = new EpicSettings(); public GogSettings GogSettings { get; set; } = new GogSettings();
+        public StoreSettings SteamStoreSettings { get; set; }
+        public StoreSettings EpicStoreSettings { get; set; }
+        public StoreSettings GogStoreSettings { get; set; }
+
         #endregion
 
         // Playnite serializes settings object to a JSON object and saves it as text file.
@@ -262,9 +274,18 @@ namespace SuccessStory
         [DontSerialize]
         public string EstimateTimeToUnlock { get => estimateTimeToUnlock; set => SetValue(ref estimateTimeToUnlock, value); }
 
-        private List<Achievements> listAchievements = new List<Achievements>();
+        private List<Achievement> listAchievements = new List<Achievement>();
         [DontSerialize]
-        public List<Achievements> ListAchievements { get => listAchievements; set => SetValue(ref listAchievements, value); }
+        public List<Achievement> ListAchievements { get => listAchievements; set => SetValue(ref listAchievements, value); }
+
+        private List<Achievement> listAchUnlockDateAsc = new List<Achievement>();
+
+        [DontSerialize]
+        public List<Achievement> ListAchUnlockDateAsc { get => listAchUnlockDateAsc; set => SetValue(ref listAchUnlockDateAsc, value); }
+
+        private List<Achievement> listAchUnlockDateDesc = new List<Achievement>();
+        [DontSerialize]
+        public List<Achievement> ListAchUnlockDateDesc { get => listAchUnlockDateDesc; set => SetValue(ref listAchUnlockDateDesc, value); }
         #endregion  
     }
 
@@ -296,6 +317,30 @@ namespace SuccessStory
 
             // Set RA console list
             Settings.RaConsoleAssociateds = Settings.RaConsoleAssociateds.OrderBy(x => x.RaConsoleName).ToList();
+
+            // TODO temp
+            if (Settings.SteamStoreSettings == null)
+            {
+                Settings.SteamStoreSettings = new StoreSettings
+                {
+                    UseApi = Settings.SteamApiSettings.UseApi,
+                    UseAuth = Settings.SteamApiSettings.UseAuth
+                };
+            }
+            if (Settings.EpicStoreSettings == null)
+            {
+                Settings.EpicStoreSettings = new StoreSettings
+                {
+                    UseAuth = Settings.EpicSettings.UseAuth
+                };
+            }
+            if (Settings.GogStoreSettings == null)
+            {
+                Settings.GogStoreSettings = new StoreSettings
+                {
+                    UseAuth = Settings.GogSettings.UseAuth
+                };
+            }
         }
 
         // Code executed when settings view is opened and user starts editing values.
@@ -335,26 +380,28 @@ namespace SuccessStory
             // StoreAPI intialization
             SuccessStory.SteamApi.SaveCurrentUser();
             SuccessStory.SteamApi.CurrentAccountInfos = null;
+            SuccessStory.SteamApi.StoreSettings = Settings.SteamStoreSettings;
             if (Settings.EnableSteam)
             {
                 _ = SuccessStory.SteamApi.CurrentAccountInfos;
-                if (Settings.SteamApiSettings.UseAuth)
-                {
-                    SuccessStory.SteamApi.CurrentAccountInfos.IsPrivate = true;
-                }
+                
             }
 
             SuccessStory.EpicApi.SaveCurrentUser();
             SuccessStory.EpicApi.CurrentAccountInfos = null;
+            SuccessStory.SteamApi.StoreSettings = Settings.EpicStoreSettings;
             if (Settings.EnableEpic)
             {
                 _ = SuccessStory.EpicApi.CurrentAccountInfos;
-                if (Settings.EpicSettings.UseAuth)
-                {
-                    SuccessStory.EpicApi.CurrentAccountInfos.IsPrivate = true;
-                }
-            }
 
+            }
+            SuccessStory.GogApi.SaveCurrentUser();
+            SuccessStory.GogApi.CurrentAccountInfos = null;
+            SuccessStory.SteamApi.StoreSettings = Settings.GogStoreSettings;
+            if (Settings.EnableGog)
+            {
+                _ = SuccessStory.GogApi.CurrentAccountInfos;
+            }
 
             Plugin.SavePluginSettings(Settings);
             SuccessStory.PluginDatabase.PluginSettings = this;
@@ -398,6 +445,10 @@ namespace SuccessStory
     }
 
     public class EpicSettings
+    {
+        public bool UseAuth { get; set; } = false;
+    }
+    public class GogSettings
     {
         public bool UseAuth { get; set; } = false;
     }

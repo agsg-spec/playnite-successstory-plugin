@@ -28,7 +28,7 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Achievement> AllAchievements = new List<Achievement>();
 
             if (IsConnected())
             {
@@ -45,14 +45,14 @@ namespace SuccessStory.Clients
                         ObservableCollection<GameAchievement> epicAchievements = EpicApi.GetAchievements(nameSpace, EpicApi.CurrentAccountInfos);
                         if (epicAchievements?.Count > 0)
                         {
-                            AllAchievements = epicAchievements.Select(x => new Achievements
+                            AllAchievements = epicAchievements.Select(x => new Achievement
                             {
                                 ApiName = x.Id,
                                 Name = x.Name,
                                 Description = x.Description,
                                 UrlUnlocked = x.UrlUnlocked,
                                 UrlLocked = x.UrlLocked,
-                                DateUnlocked = x.DateUnlocked,
+                                DateUnlocked = x.DateUnlocked.ToString().Contains(default(DateTime).ToString()) ? (DateTime?)null : x.DateUnlocked,
                                 Percent = x.Percent,
                                 GamerScore = x.GamerScore
                             }).ToList();
@@ -62,7 +62,7 @@ namespace SuccessStory.Clients
                         {
                             if (!EpicApi.IsUserLoggedIn)
                             {
-                                ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsEpicNoAuthenticate"), ExternalPlugin.EpicLibrary);
+                                ShowNotificationPluginNoAuthenticate(ExternalPlugin.SuccessStory);
                             }
                         }
                     }
@@ -81,7 +81,7 @@ namespace SuccessStory.Clients
             }
             else
             {
-                ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsEpicNoAuthenticate"), ExternalPlugin.EpicLibrary);
+                ShowNotificationPluginNoAuthenticate(ExternalPlugin.SuccessStory);
             }
 
             gameAchievements.SetRaretyIndicator();
@@ -105,12 +105,12 @@ namespace SuccessStory.Clients
 
                     if (!(bool)CachedConfigurationValidationResult)
                     {
-                        ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsEpicNoAuthenticate"), ExternalPlugin.EpicLibrary);
+                        ShowNotificationPluginNoAuthenticate(ExternalPlugin.SuccessStory);
                     }
                 }
                 else if (!(bool)CachedConfigurationValidationResult)
                 {
-                    ShowNotificationPluginErrorMessage();
+                    ShowNotificationPluginErrorMessage(ExternalPlugin.SuccessStory);
                 }
 
                 return (bool)CachedConfigurationValidationResult;

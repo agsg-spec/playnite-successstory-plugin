@@ -38,7 +38,7 @@ namespace SuccessStory.Clients
         private string UrlWowAchLegacy => "legacy/model.json";
         #endregion
 
-        public WowAchievements() : base("Wow", CodeLang.GetEpicLang(API.Instance.ApplicationSettings.Language))
+        public WowAchievements() : base("WoW", CodeLang.GetEpicLang(API.Instance.ApplicationSettings.Language))
         {
 
         }
@@ -47,8 +47,8 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
-            List<GameStats> AllStats = new List<GameStats>();
+            List<Models.Achievement> allAchievements = new List<Models.Achievement>();
+            List<GameStats> allStats = new List<GameStats>();
 
             string urlFinal = string.Empty;
             try
@@ -79,9 +79,9 @@ namespace SuccessStory.Clients
                             Serialization.TryFromJson(Serialization.ToJson(subItems?.Value), out SubcategoriesItem subcategoriesItem);
                             if (subcategoriesItem?.Achievements != null)
                             {
-                                foreach (Achievement achievement in subcategoriesItem.Achievements)
+                                foreach (Models.Wow.Achievement achievement in subcategoriesItem.Achievements)
                                 {
-                                    AllAchievements.Add(new Achievements
+                                    allAchievements.Add(new Models.Achievement
                                     {
                                         Name = achievement.Name,
                                         Description = achievement.Description,
@@ -102,8 +102,8 @@ namespace SuccessStory.Clients
             }
 
 
-            gameAchievements.Items = AllAchievements;
-            gameAchievements.ItemsStats = AllStats;
+            gameAchievements.Items = allAchievements;
+            gameAchievements.ItemsStats = allStats;
 
 
             // Set source link
@@ -111,7 +111,7 @@ namespace SuccessStory.Clients
             {
                 gameAchievements.SourcesLink = new SourceLink
                 {
-                    GameName = "Wow",
+                    GameName = "WoW",
                     Name = "Battle.net",
                     Url = UrlWowBaseLocalised
                 };
@@ -121,7 +121,7 @@ namespace SuccessStory.Clients
             if (gameAchievements.HasAchievements)
             {
                 ExophaseAchievements exophaseAchievements = new ExophaseAchievements();
-                exophaseAchievements.SetRarety(gameAchievements, Services.SuccessStoryDatabase.AchievementSource.Overwatch);
+                exophaseAchievements.SetRarety(gameAchievements, Services.SuccessStoryDatabase.AchievementSource.Wow);
             }
 
             gameAchievements.SetRaretyIndicator();
@@ -182,12 +182,12 @@ namespace SuccessStory.Clients
                 string url = string.Format("https://worldofwarcraft.blizzard.com/game/status");
                 string response = Web.DownloadStringData(url).GetAwaiter().GetResult();
 
-                string js = Regex.Match(response, @"realm-status.\w*.js").Value;
-                if (!js.IsNullOrEmpty())
+                url = Regex.Match(response, @"<script\s+src=""([^""]+realm-status.\w*.js)"">", RegexOptions.IgnoreCase).Groups[1].Value;
+                if (!url.IsNullOrEmpty())
                 {
-                    url = $"https://assets.worldofwarcraft.blizzard.com/static/{js}";
                     response = Web.DownloadStringData(url).GetAwaiter().GetResult();
-                    Sha256Hash = Regex.Match(response, "\"GetRealmStatusData\"[)],a[.]documentId=\"(\\w*)\"}").Groups[1].Value;
+                    Match matches = Regex.Match(response, @"""GetRealmStatusData""\)[^,]*,\w*\.documentId=""(\w*)""");
+                    Sha256Hash = matches.Success ? matches.Groups[1].Value : null;
                 }
             }
             catch (Exception ex)

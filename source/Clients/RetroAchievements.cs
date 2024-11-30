@@ -53,18 +53,21 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Achievement> AllAchievements = new List<Achievement>();
 
             if (IsConfigured())
             {
-                int consoleID = GetConsoleId(game);
-                if (ConsoleExcludeHash.FindAll(x => x == consoleID)?.Count == 0)
-                {
-                    GameId = GetGameIdByHash(game);
-                }
                 if (GameId == 0)
                 {
-                    GameId = GetGameIdByName(game);
+                    int consoleID = GetConsoleId(game);
+                    if (ConsoleExcludeHash.FindAll(x => x == consoleID)?.Count == 0)
+                    {
+                        GameId = GetGameIdByHash(game);
+                    }
+                    if (GameId == 0)
+                    {
+                        GameId = GetGameIdByName(game);
+                    }
                 }
 
                 if (GameId != 0)
@@ -79,7 +82,7 @@ namespace SuccessStory.Clients
             }
             else
             {
-                ShowNotificationPluginNoConfiguration(ResourceProvider.GetString("LOCSuccessStoryNotificationsRetroAchievementsBadConfig"));
+                ShowNotificationPluginNoConfiguration();
             }
 
             gameAchievements.Items = AllAchievements;
@@ -110,12 +113,12 @@ namespace SuccessStory.Clients
 
                 if (!(bool)CachedConfigurationValidationResult)
                 {
-                    ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsRetroAchievementsBadConfig"), PlayniteTools.ExternalPlugin.None);
+                    ShowNotificationPluginNoAuthenticate(PlayniteTools.ExternalPlugin.None);
                 }
             }
             else if (!(bool)CachedConfigurationValidationResult)
             {
-                ShowNotificationPluginErrorMessage();
+                ShowNotificationPluginErrorMessage(PlayniteTools.ExternalPlugin.None);
             }
 
             return (bool)CachedConfigurationValidationResult;
@@ -406,7 +409,7 @@ namespace SuccessStory.Clients
             }
             else if (consolesAssociated.Count() > 1)
             {
-                string message = string.Format(ResourceProvider.GetString("LOCCommonNotificationTooMuchData"), $"{ClientName} - {platform.Name}");
+                string message = string.Format(ResourceProvider.GetString("LOCCommonNotificationTooMuchData"), $"{ClientName} - {game.Name}");
                 ShowNotificationPluginTooMuchData(message, PlayniteTools.ExternalPlugin.SuccessStory);
             }
 
@@ -791,9 +794,9 @@ namespace SuccessStory.Clients
         }
 
 
-        private List<Achievements> GetGameInfoAndUserProgress(int gameID)
+        private List<Achievement> GetGameInfoAndUserProgress(int gameID)
         {
-            List<Achievements> Achievements = new List<Achievements>();
+            List<Achievement> Achievements = new List<Achievement>();
 
             string Target = "API_GetGameInfoAndUserProgress.php";
             UrlAchievements = string.Format(BaseUrl + Target + @"?z={0}&y={1}&u={0}&g={2}", User, Key, gameID);
@@ -822,13 +825,13 @@ namespace SuccessStory.Clients
                     {
                         foreach (dynamic it in item)
                         {
-                            Achievements.Add(new Achievements
+                            Achievements.Add(new Achievement
                             {
                                 Name = (string)it["Title"],
                                 Description = (string)it["Description"],
                                 UrlLocked = string.Format(BaseUrlLocked, (string)it["BadgeName"]),
                                 UrlUnlocked = string.Format(BaseUrlUnlocked, (string)it["BadgeName"]),
-                                DateUnlocked = (it["DateEarned"] == null) ? default : Convert.ToDateTime((string)it["DateEarned"]),
+                                DateUnlocked = (it["DateEarned"] == null) ? (DateTime?)null : Convert.ToDateTime((string)it["DateEarned"]),
                                 Percent = it["NumAwarded"] == null || (int)it["NumAwarded"] == 0 || NumDistinctPlayersCasual == 0 ? 100 : (int)it["NumAwarded"] * 100 / NumDistinctPlayersCasual,
                                 GamerScore = it["Points"] == null ? 0 : (int)it["Points"]
                             });

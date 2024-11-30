@@ -15,18 +15,25 @@ using System.Windows.Media.Effects;
 
 namespace SuccessStory.Models
 {
-    public class Achievements : ObservableObject
+    public class Achievement : ObservableObject
     {
         private SuccessStoryDatabase PluginDatabase => SuccessStory.PluginDatabase;
 
-        private string name;
-        public string Name { get => name; set => name = value?.Trim(); }
+        private string _name;
+        public string Name { get => _name; set => _name = value?.Trim(); }
         public string ApiName { get; set; } = string.Empty;
         public string Description { get; set; }
         public string UrlUnlocked { get; set; }
         public string UrlLocked { get; set; }
+
         // TODO
-        public DateTime? DateUnlocked { get; set; }
+        private DateTime? _dateUnlocked;
+        public DateTime? DateUnlocked
+        {
+            get => _dateUnlocked == default(DateTime) ? null : _dateUnlocked;
+            set => _dateUnlocked = value;
+        }
+
         public bool IsHidden { get; set; } = false;
         /// <summary>
         /// Rarity indicator
@@ -50,6 +57,7 @@ namespace SuccessStory.Models
         public string ParentCategory { get; set; } = string.Empty;
 
         public string CategoryRpcs3 { get; set; } = string.Empty;
+        public string CategoryShadPS4 { get; set; } = string.Empty;
 
 
         /// <summary>
@@ -62,6 +70,11 @@ namespace SuccessStory.Models
             {
                 string TempUrlUnlocked = UrlUnlocked;
                 if (TempUrlUnlocked?.Contains("rpcs3", StringComparison.InvariantCultureIgnoreCase) ?? false)
+                {
+                    TempUrlUnlocked = Path.Combine(PluginDatabase.Paths.PluginUserDataPath, UrlUnlocked);
+                    return TempUrlUnlocked;
+                }
+                if (TempUrlUnlocked?.Contains("shadps4", StringComparison.InvariantCultureIgnoreCase) ?? false)
                 {
                     TempUrlUnlocked = Path.Combine(PluginDatabase.Paths.PluginUserDataPath, UrlUnlocked);
                     return TempUrlUnlocked;
@@ -230,7 +243,7 @@ namespace SuccessStory.Models
         }
 
         [DontSerialize]
-        public bool IsUnlock => !(DateUnlocked == null || DateUnlocked == default || DateUnlocked.ToString().Contains("0001"));
+        public bool IsUnlock => DateWhenUnlocked != null || DateUnlocked.ToString().Contains("1982");
 
         private bool isVisible = true;
         [DontSerialize]

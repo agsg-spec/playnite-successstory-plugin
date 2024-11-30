@@ -31,7 +31,7 @@ namespace SuccessStory.Clients
             {
                 if (_steamApi == null)
                 {
-                    _steamApi = new SteamApi(PluginDatabase.PluginName);
+                    _steamApi = new SteamApi(PluginDatabase.PluginName, CommonPluginsShared.PlayniteTools.ExternalPlugin.SuccessStory);
                 }
                 return _steamApi;
             }
@@ -47,7 +47,7 @@ namespace SuccessStory.Clients
 
         private string Hyphenate(string str, int pos) => string.Join("-", Regex.Split(str, @"(?<=\G.{" + pos + "})(?!$)"));
 
-        
+
         public SteamEmulators(List<Folder> LocalFolders) : base("SteamEmulators")
         {
             AchievementsDirectories.Add("%PUBLIC%\\Documents\\Steam\\CODEX");
@@ -89,8 +89,8 @@ namespace SuccessStory.Clients
         #region Configuration
         public override bool ValidateConfiguration()
         {
-            // The authentification is only for localised achievement
-            return true;
+            // Just check for API key existence
+            return !string.IsNullOrEmpty(steamApi?.CurrentAccountInfos?.ApiKey);
         }
 
         public override bool EnabledInSettings()
@@ -157,7 +157,7 @@ namespace SuccessStory.Clients
                 }
                 gameAchievementsCached.Items.ForEach(x =>
                 {
-                    Achievements finded = data.Achievements.Find(y => x.ApiName == y.ApiName);
+                    Achievement finded = data.Achievements.Find(y => x.ApiName == y.ApiName);
                     if (finded != null)
                     {
                         x.Name = finded.Name;
@@ -223,7 +223,7 @@ namespace SuccessStory.Clients
             return gameStats;
         }
 
-        private List<Achievements> ReadAchievementsINI(string pathFile, List<Achievements> ReturnAchievements)
+        private List<Achievement> ReadAchievementsINI(string pathFile, List<Achievement> ReturnAchievements)
         {
             bool isType2 = false;
             bool isType3 = false;
@@ -266,7 +266,7 @@ namespace SuccessStory.Clients
             }
         }
 
-        private List<Achievements> ReadAchievementsINI_type1(string pathFile, List<Achievements> ReturnAchievements)
+        private List<Achievement> ReadAchievementsINI_type1(string pathFile, List<Achievement> ReturnAchievements)
         {
             try
             {
@@ -333,7 +333,7 @@ namespace SuccessStory.Clients
                         // End Achievement
                         if (timeUnlock != 0 && State)
                         {
-                            ReturnAchievements.Add(new Achievements
+                            ReturnAchievements.Add(new Achievement
                             {
                                 ApiName = Name,
                                 Name = string.Empty,
@@ -360,7 +360,7 @@ namespace SuccessStory.Clients
             return ReturnAchievements;
         }
 
-        private List<Achievements> ReadAchievementsINI_type3(string pathFile, List<Achievements> ReturnAchievements)
+        private List<Achievement> ReadAchievementsINI_type3(string pathFile, List<Achievement> ReturnAchievements)
         {
             try
             {
@@ -397,7 +397,7 @@ namespace SuccessStory.Clients
                         // End Achievement
                         if (timeUnlock != 0 && State)
                         {
-                            ReturnAchievements.Add(new Achievements
+                            ReturnAchievements.Add(new Achievement
                             {
                                 ApiName = Name,
                                 Name = string.Empty,
@@ -424,7 +424,7 @@ namespace SuccessStory.Clients
             return ReturnAchievements;
         }
 
-        private List<Achievements> ReadAchievementsStatsINI(string pathFile, List<Achievements> ReturnAchievements)
+        private List<Achievement> ReadAchievementsStatsINI(string pathFile, List<Achievement> ReturnAchievements)
         {
             try
             {
@@ -455,7 +455,7 @@ namespace SuccessStory.Clients
 
                             if (timeUnlock != 0)
                             {
-                                ReturnAchievements.Add(new Achievements
+                                ReturnAchievements.Add(new Achievement
                                 {
                                     ApiName = Name,
                                     Name = string.Empty,
@@ -482,7 +482,7 @@ namespace SuccessStory.Clients
             return ReturnAchievements;
         }
 
-        private List<Achievements> ReadAchievementsINI_type2(string pathFile, List<Achievements> ReturnAchievements)
+        private List<Achievement> ReadAchievementsINI_type2(string pathFile, List<Achievement> ReturnAchievements)
         {
             try
             {
@@ -511,7 +511,7 @@ namespace SuccessStory.Clients
 
                         if (timeUnlock != 0)
                         {
-                            ReturnAchievements.Add(new Achievements
+                            ReturnAchievements.Add(new Achievement
                             {
                                 ApiName = Name,
                                 Name = string.Empty,
@@ -538,7 +538,7 @@ namespace SuccessStory.Clients
         }
 
         //eFMann - New OnlineFix Achievments.ini type
-        private List<Achievements> ReadOnlineFixAchievementsINI(string pathFile, List<Achievements> ReturnAchievements)
+        private List<Achievement> ReadOnlineFixAchievementsINI(string pathFile, List<Achievement> ReturnAchievements)
         {
             try
             {
@@ -558,7 +558,7 @@ namespace SuccessStory.Clients
                         // If we have a previous achievement, add it to the list
                         if (!string.IsNullOrEmpty(currentAchievement) && achieved && dateUnlocked.HasValue)
                         {
-                            ReturnAchievements.Add(new Achievements
+                            ReturnAchievements.Add(new Achievement
                             {
                                 ApiName = currentAchievement,
                                 Name = string.Empty,
@@ -591,7 +591,7 @@ namespace SuccessStory.Clients
                 // Add the last achievement if it exists
                 if (!string.IsNullOrEmpty(currentAchievement) && achieved && dateUnlocked.HasValue)
                 {
-                    ReturnAchievements.Add(new Achievements
+                    ReturnAchievements.Add(new Achievement
                     {
                         ApiName = currentAchievement,
                         Name = string.Empty,
@@ -611,11 +611,11 @@ namespace SuccessStory.Clients
 
             return ReturnAchievements;
         }
-               
-        
+
+
         private SteamEmulatorData Get(Game game, uint appId, string apiKey, bool IsManual)
         {
-            List<Achievements> ReturnAchievements = new List<Achievements>();
+            List<Achievement> ReturnAchievements = new List<Achievement>();
             List<GameStats> ReturnStats = new List<GameStats>();
 
             if (!IsManual)
@@ -655,7 +655,7 @@ namespace SuccessStory.Clients
                                     // End Achievement
                                     if (line.Trim() == string.Empty && DateUnlocked != null)
                                     {
-                                        ReturnAchievements.Add(new Achievements
+                                        ReturnAchievements.Add(new Achievement
                                         {
                                             ApiName = Name,
                                             Name = string.Empty,
@@ -739,7 +739,7 @@ namespace SuccessStory.Clients
                                         // End Achievement
                                         if (timeUnlock != 0 && State)
                                         {
-                                            ReturnAchievements.Add(new Achievements
+                                            ReturnAchievements.Add(new Achievement
                                             {
                                                 ApiName = Name,
                                                 Name = string.Empty,
@@ -770,7 +770,7 @@ namespace SuccessStory.Clients
                                 string Name = string.Empty;
                                 DateTime? DateUnlocked = null;
 
-                                string jsonText = File.ReadAllText(Environment.ExpandEnvironmentVariables(DirAchivements) + $"\\{AppId}\\achievements.json");                               
+                                string jsonText = File.ReadAllText(Environment.ExpandEnvironmentVariables(DirAchivements) + $"\\{AppId}\\achievements.json");
                                 foreach (dynamic achievement in Serialization.FromJson<dynamic>(jsonText))
                                 {
                                     // eFMann - added an exlusions to remove [''] from APIName for games like Forza Horizon 4
@@ -793,7 +793,7 @@ namespace SuccessStory.Clients
 
                                     if (Name != string.Empty && DateUnlocked != null)
                                     {
-                                        ReturnAchievements.Add(new Achievements
+                                        ReturnAchievements.Add(new Achievement
                                         {
                                             ApiName = Name,
                                             Name = string.Empty,
@@ -835,7 +835,7 @@ namespace SuccessStory.Clients
 
                                     if (Name != string.Empty && DateUnlocked != null)
                                     {
-                                        ReturnAchievements.Add(new Achievements
+                                        ReturnAchievements.Add(new Achievement
                                         {
                                             ApiName = Name,
                                             Name = string.Empty,
@@ -955,7 +955,7 @@ namespace SuccessStory.Clients
                                             DateUnlocked = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddSeconds(Date).ToLocalTime();
                                             if (Name != string.Empty && DateUnlocked != null)
                                             {
-                                                ReturnAchievements.Add(new Achievements
+                                                ReturnAchievements.Add(new Achievement
                                                 {
                                                     ApiName = Name,
                                                     Name = string.Empty,
@@ -1027,7 +1027,7 @@ namespace SuccessStory.Clients
                                             DateUnlocked = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddSeconds(int.Parse(l[1])).ToLocalTime();
                                             if (Name != string.Empty && DateUnlocked != null)
                                             {
-                                                ReturnAchievements.Add(new Achievements
+                                                ReturnAchievements.Add(new Achievement
                                                 {
                                                     ApiName = Name,
                                                     Name = string.Empty,
@@ -1100,7 +1100,7 @@ namespace SuccessStory.Clients
 
                                         if (Name != string.Empty && DateUnlocked != null)
                                         {
-                                            ReturnAchievements.Add(new Achievements
+                                            ReturnAchievements.Add(new Achievement
                                             {
                                                 ApiName = Name,
                                                 Name = string.Empty,
@@ -1139,7 +1139,7 @@ namespace SuccessStory.Clients
 
                                         if (Name != string.Empty && DateUnlocked != null)
                                         {
-                                            ReturnAchievements.Add(new Achievements
+                                            ReturnAchievements.Add(new Achievement
                                             {
                                                 ApiName = Name,
                                                 Name = string.Empty,
@@ -1200,10 +1200,10 @@ namespace SuccessStory.Clients
 
                 Common.LogDebug(true, $"{Serialization.ToJson(ReturnAchievements)}");
 
-                if (ReturnAchievements == new List<Achievements>())
+                if (ReturnAchievements == new List<Achievement>())
                 {
                     Common.LogDebug(true, $"No data for {AppId}");
-                    return new SteamEmulatorData { Achievements = new List<Achievements>(), Stats = new List<GameStats>() };
+                    return new SteamEmulatorData { Achievements = new List<Achievement>(), Stats = new List<GameStats>() };
                 }
             }
 
@@ -1232,7 +1232,7 @@ namespace SuccessStory.Clients
                             Common.LogError(ex, false, $"Failed to load from {url}", true, PluginDatabase.PluginName);
                             break;
                     }
-                    return new SteamEmulatorData { Achievements = new List<Achievements>(), Stats = new List<GameStats>() };
+                    return new SteamEmulatorData { Achievements = new List<Achievement>(), Stats = new List<GameStats>() };
                 }
             }
 
@@ -1254,7 +1254,7 @@ namespace SuccessStory.Clients
                         {
                             if (ReturnAchievements[j].ApiName.IsEqual(((string)resultItems[i]["name"])))
                             {
-                                Achievements temp = new Achievements
+                                Achievement temp = new Achievement
                                 {
                                     ApiName = (string)resultItems[i]["name"],
                                     Name = (string)resultItems[i]["displayName"],
@@ -1272,7 +1272,7 @@ namespace SuccessStory.Clients
 
                         if (!isFind)
                         {
-                            ReturnAchievements.Add(new Achievements
+                            ReturnAchievements.Add(new Achievement
                             {
                                 ApiName = (string)resultItems[i]["name"],
                                 Name = (string)resultItems[i]["displayName"],
@@ -1314,12 +1314,12 @@ namespace SuccessStory.Clients
                                 });
                             }
                         }
-                    }                    
+                    }
                 }
                 catch (Exception ex)
                 {
                     Common.LogError(ex, true, $"Failed to parse");
-                    return new SteamEmulatorData { Achievements = new List<Achievements>(), Stats = new List<GameStats>() };
+                    return new SteamEmulatorData { Achievements = new List<Achievement>(), Stats = new List<GameStats>() };
                 }
             }
             #endregion
@@ -1341,9 +1341,9 @@ namespace SuccessStory.Clients
         }
 
 
-        private List<Achievements> GetSteamEmu(string DirAchivements)
+        private List<Achievement> GetSteamEmu(string DirAchivements)
         {
-            List<Achievements> ReturnAchievements = new List<Achievements>();
+            List<Achievement> ReturnAchievements = new List<Achievement>();
 
             if (File.Exists(DirAchivements + $"\\stats.ini"))
             {
@@ -1370,7 +1370,7 @@ namespace SuccessStory.Clients
                             DateUnlocked = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddSeconds(int.Parse(data[1])).ToLocalTime();
                             Name = data[0];
 
-                            ReturnAchievements.Add(new Achievements
+                            ReturnAchievements.Add(new Achievement
                             {
                                 ApiName = Name,
                                 Name = string.Empty,
@@ -1399,7 +1399,7 @@ namespace SuccessStory.Clients
 
     public class SteamEmulatorData
     {
-        public List<Achievements> Achievements { get; set; }
+        public List<Achievement> Achievements { get; set; }
         public List<GameStats> Stats { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Playnite.SDK;
+﻿
+using Playnite.SDK;
 using Playnite.SDK.Models;
 using SuccessStory.Models;
 using SuccessStory.Services;
@@ -174,11 +175,12 @@ namespace SuccessStory.Clients
             ));
         }
 
-        public virtual void ShowNotificationPluginNoAuthenticate(string message, ExternalPlugin pluginSource)
+        public virtual void ShowNotificationPluginNoAuthenticate(ExternalPlugin pluginSource)
         {
+            string message = string.Format(ResourceProvider.GetString("LOCCommonStoresNoAuthenticate"), ClientName);
             LastErrorId = $"{PluginDatabase.PluginName}-{ClientName.RemoveWhiteSpace()}-noauthenticate";
             LastErrorMessage = message;
-            Logger.Warn($"{ClientName} user is not authenticated");
+            Logger.Warn($"{ClientName}: User is not authenticated");
 
             API.Instance.Notifications.Add(new NotificationMessage(
                 $"{PluginDatabase.PluginName}-{ClientName.RemoveWhiteSpace()}-noauthenticate",
@@ -240,8 +242,9 @@ namespace SuccessStory.Clients
             ));
         }
 
-        public virtual void ShowNotificationPluginNoConfiguration(string message)
+        public virtual void ShowNotificationPluginNoConfiguration()
         {
+            string message = string.Format(ResourceProvider.GetString("LOCCommonStoreBadConfiguration"), ClientName);
             LastErrorId = $"{PluginDatabase.PluginName}-{ClientName.RemoveWhiteSpace()}-noconfig";
             LastErrorMessage = message;
             Logger.Warn($"{ClientName} is not configured");
@@ -272,14 +275,34 @@ namespace SuccessStory.Clients
         }
 
 
-        public virtual void ShowNotificationPluginErrorMessage()
+        public virtual void ShowNotificationPluginErrorMessage(ExternalPlugin pluginSource)
         {
             if (!LastErrorMessage.IsNullOrEmpty())
             {
                 API.Instance.Notifications.Add(new NotificationMessage(
                     LastErrorId,
                     $"{PluginDatabase.PluginName}\r\n{LastErrorMessage}",
-                    NotificationType.Error
+                NotificationType.Error,
+                () =>
+                {
+                    try
+                    {
+                        Plugin plugin = API.Instance.Addons.Plugins.Find(x => x.Id == PlayniteTools.GetPluginId(pluginSource));
+                        if (plugin != null)
+                        {
+                            _ = plugin.OpenSettingsView();
+                            foreach (GenericAchievements achievementProvider in SuccessStoryDatabase.AchievementProviders.Values)
+                            {
+                                achievementProvider.ResetCachedConfigurationValidationResult();
+                                achievementProvider.ResetCachedIsConnectedResult();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Common.LogError(ex, false, true, PluginDatabase.PluginName);
+                    }
+                }
                 ));
             }
         }

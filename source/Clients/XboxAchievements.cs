@@ -38,7 +38,7 @@ namespace SuccessStory.Clients
         public override GameAchievements GetAchievements(Game game)
         {
             GameAchievements gameAchievements = SuccessStory.PluginDatabase.GetDefault(game);
-            List<Achievements> AllAchievements = new List<Achievements>();
+            List<Achievement> AllAchievements = new List<Achievement>();
 
             if (IsConnected())
             {
@@ -47,7 +47,7 @@ namespace SuccessStory.Clients
                     AuthorizationData authData = XboxAccountClient.GetSavedXstsTokens();
                     if (authData == null)
                     {
-                        ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsXboxNotAuthenticate"), ExternalPlugin.XboxLibrary);
+                        ShowNotificationPluginNoAuthenticate(ExternalPlugin.XboxLibrary);
                         return gameAchievements;
                     }
 
@@ -60,7 +60,7 @@ namespace SuccessStory.Clients
             }
             else
             {
-                ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsXboxNotAuthenticate"), ExternalPlugin.XboxLibrary);
+                ShowNotificationPluginNoAuthenticate(ExternalPlugin.XboxLibrary);
             }
 
 
@@ -106,12 +106,12 @@ namespace SuccessStory.Clients
 
                     if (!(bool)CachedConfigurationValidationResult)
                     {
-                        ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsXboxNotAuthenticate"), ExternalPlugin.XboxLibrary);
+                        ShowNotificationPluginNoAuthenticate(ExternalPlugin.XboxLibrary);
                     }
                 }
                 else if (!(bool)CachedConfigurationValidationResult)
                 {
-                    ShowNotificationPluginErrorMessage();
+                    ShowNotificationPluginErrorMessage(ExternalPlugin.XboxLibrary);
                 }
 
                 return (bool)CachedConfigurationValidationResult;
@@ -204,9 +204,9 @@ namespace SuccessStory.Clients
         }
 
 
-        private async Task<List<Achievements>> GetXboxAchievements(Game game, AuthorizationData authorizationData)
+        private async Task<List<Achievement>> GetXboxAchievements(Game game, AuthorizationData authorizationData)
         {
-            List<Func<Game, AuthorizationData, Task<List<Achievements>>>> getAchievementMethods = new List<Func<Game, AuthorizationData, Task<List<Achievements>>>>
+            List<Func<Game, AuthorizationData, Task<List<Achievement>>>> getAchievementMethods = new List<Func<Game, AuthorizationData, Task<List<Achievement>>>>
             {
                 GetXboxOneAchievements,
                 GetXbox360Achievements
@@ -217,11 +217,11 @@ namespace SuccessStory.Clients
                 getAchievementMethods.Reverse();
             }
 
-            foreach (Func<Game, AuthorizationData, Task<List<Achievements>>> getAchievementsMethod in getAchievementMethods)
+            foreach (Func<Game, AuthorizationData, Task<List<Achievement>>> getAchievementsMethod in getAchievementMethods)
             {
                 try
                 {
-                    List<Achievements> result = await getAchievementsMethod.Invoke(game, authorizationData);
+                    List<Achievement> result = await getAchievementsMethod.Invoke(game, authorizationData);
                     if (result != null && result.Any())
                     {
                         return result;
@@ -231,7 +231,7 @@ namespace SuccessStory.Clients
                 {
                     if (ex.Message.Contains("User is not authenticated", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        ShowNotificationPluginNoAuthenticate(ResourceProvider.GetString("LOCSuccessStoryNotificationsXboxNotAuthenticate"), ExternalPlugin.XboxLibrary);
+                        ShowNotificationPluginNoAuthenticate(ExternalPlugin.XboxLibrary);
                     }
                     else
                     {
@@ -249,7 +249,7 @@ namespace SuccessStory.Clients
         /// <param name="game"></param>
         /// <param name="authorizationData"></param>
         /// <returns></returns>
-        private async Task<List<Achievements>> GetXboxOneAchievements(Game game, AuthorizationData authorizationData)
+        private async Task<List<Achievement>> GetXboxOneAchievements(Game game, AuthorizationData authorizationData)
         {
             if (authorizationData is null)
             {
@@ -259,7 +259,7 @@ namespace SuccessStory.Clients
             string xuid = authorizationData.DisplayClaims.xui[0].xid;
 
             Common.LogDebug(true, $"GetXboxAchievements() - name: {game.Name} - gameId: {game.GameId}");
-            
+
             string titleId = GetTitleId(game);
 
             string url = string.Format(AchievementsBaseUrl, xuid) + $"?titleId={titleId}&maxItems=1000";
@@ -283,7 +283,7 @@ namespace SuccessStory.Clients
                 Common.LogDebug(true, $"Find with {titleId} & {game.GameId} for {game.Name} - {relevantAchievements.Count}");
             }
 
-            List<Achievements> achievements = relevantAchievements.Select(ConvertToAchievement).ToList();
+            List<Achievement> achievements = relevantAchievements.Select(ConvertToAchievement).ToList();
             return achievements;
         }
 
@@ -293,7 +293,7 @@ namespace SuccessStory.Clients
         /// <param name="game"></param>
         /// <param name="authorizationData"></param>
         /// <returns></returns>
-        private async Task<List<Achievements>> GetXbox360Achievements(Game game, AuthorizationData authorizationData)
+        private async Task<List<Achievement>> GetXbox360Achievements(Game game, AuthorizationData authorizationData)
         {
             if (authorizationData is null)
             {
@@ -309,7 +309,7 @@ namespace SuccessStory.Clients
             if (titleId.IsNullOrEmpty())
             {
                 Common.LogDebug(true, $"Couldn't find title ID for game name: {game.Name} - gameId: {game.GameId}");
-                return new List<Achievements>();
+                return new List<Achievement>();
             }
 
             // gets the player-unlocked achievements
@@ -333,40 +333,40 @@ namespace SuccessStory.Clients
                 mergedAchievements.Add(a.id, a);
             }
 
-            List<Achievements> achievements = mergedAchievements.Values.Select(ConvertToAchievement).ToList();
+            List<Achievement> achievements = mergedAchievements.Values.Select(ConvertToAchievement).ToList();
 
             return achievements;
         }
 
 
-        private static Achievements ConvertToAchievement(XboxOneAchievement xboxAchievement)
+        private static Achievement ConvertToAchievement(XboxOneAchievement xboxAchievement)
         {
-            return new Achievements
+            return new Achievement
             {
                 ApiName = string.Empty,
                 Name = xboxAchievement.name,
                 Description = (xboxAchievement.progression.timeUnlocked == default) ? xboxAchievement.lockedDescription : xboxAchievement.description,
                 IsHidden = xboxAchievement.isSecret,
                 Percent = 100,
-                DateUnlocked = xboxAchievement.progression.timeUnlocked,
+                DateUnlocked = xboxAchievement.progression.timeUnlocked.ToString().Contains(default(DateTime).ToString()) ? (DateTime?)null : xboxAchievement.progression.timeUnlocked,
                 UrlLocked = string.Empty,
                 UrlUnlocked = xboxAchievement.mediaAssets[0].url,
                 GamerScore = float.Parse(xboxAchievement.rewards?.FirstOrDefault(x => x.type.IsEqual("Gamerscore"))?.value ?? "0")
             };
         }
 
-        private static Achievements ConvertToAchievement(Xbox360Achievement xboxAchievement)
+        private static Achievement ConvertToAchievement(Xbox360Achievement xboxAchievement)
         {
             bool unlocked = xboxAchievement.unlocked || xboxAchievement.unlockedOnline;
 
-            return new Achievements
+            return new Achievement
             {
                 ApiName = string.Empty,
                 Name = xboxAchievement.name,
                 Description = unlocked ? xboxAchievement.lockedDescription : xboxAchievement.description,
                 IsHidden = xboxAchievement.isSecret,
                 Percent = 100,
-                DateUnlocked = unlocked ? xboxAchievement.timeUnlocked : default,
+                DateUnlocked = unlocked ? xboxAchievement.timeUnlocked : (DateTime?)null,
                 UrlLocked = string.Empty,
                 UrlUnlocked = $"https://image-ssl.xboxlive.com/global/t.{xboxAchievement.titleId:x}/ach/0/{xboxAchievement.imageId:x}",
                 GamerScore = xboxAchievement.gamerscore

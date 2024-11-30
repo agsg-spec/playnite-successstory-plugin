@@ -125,16 +125,16 @@ namespace SuccessStory.Clients
             }
             else if (!IsConfigured())
             {
-                ShowNotificationPluginNoConfiguration(ResourceProvider.GetString("LOCSuccessStoryNotificationsXbox360BadConfig"));
+                ShowNotificationPluginNoConfiguration();
             }
 
             gameAchievements.SetRaretyIndicator();
             return gameAchievements;
         }
 
-        private List<Achievements> ProcessAchievementsImproved(string gameId, string successStoryJsonFile, string tempJsonFile, string achievementTextFile, Game game)
+        private List<Achievement> ProcessAchievementsImproved(string gameId, string successStoryJsonFile, string tempJsonFile, string achievementTextFile, Game game)
         {
-            var achievements = new List<Achievements>();
+            var achievements = new List<Achievement>();
 
             try
             {
@@ -224,7 +224,7 @@ namespace SuccessStory.Clients
             return $"Unlocked:\r\n\"{name}\" \"{date.ToString("yyyy-MM-ddTHH:mm:ss")}\"";
         }
 
-        private List<Achievements> ParseExistingAchievements(string jsonPath)
+        private List<Achievement> ParseExistingAchievements(string jsonPath)
         {
             try
             {
@@ -232,15 +232,7 @@ namespace SuccessStory.Clients
                 {
                     string jsonContent = File.ReadAllText(jsonPath);
                     var gameAchievements = Serialization.FromJson<GameAchievements>(jsonContent);
-
-                    foreach (var achievement in gameAchievements.Items ?? new List<Achievements>())
-                    {
-                        if (!achievement.DateUnlocked.HasValue)
-                        {
-                            achievement.DateUnlocked = new DateTime(1, 1, 1, 0, 0, 0);
-                        }
-                    }
-                    return gameAchievements.Items ?? new List<Achievements>();
+                    return gameAchievements.Items ?? new List<Achievement>();
                 }
             }
             catch (Exception ex)
@@ -248,14 +240,14 @@ namespace SuccessStory.Clients
                 _logger.Error($"Xbox360: Failed to parse existing achievements: {ex.Message}");
                 Common.LogError(ex, false, true, PluginDatabase.PluginName);
             }
-            return new List<Achievements>();
+            return new List<Achievement>();
         }
 
-        private void UpdateAchievementUnlockDates(List<Achievements> achievements, Dictionary<string, DateTime> unlockedAchievements)
+        private void UpdateAchievementUnlockDates(List<Achievement> achievements, Dictionary<string, DateTime> unlockedAchievements)
         {
             foreach (var achievement in achievements)
             {
-                if (unlockedAchievements.ContainsKey(achievement.Name) && achievement.DateUnlocked == DateTime.MinValue)
+                if (unlockedAchievements.ContainsKey(achievement.Name))
                 {
                     achievement.DateUnlocked = unlockedAchievements[achievement.Name];
                 }
@@ -264,7 +256,7 @@ namespace SuccessStory.Clients
             achievements.Sort((a, b) => Nullable.Compare(a.DateUnlocked, b.DateUnlocked));
         }
 
-        private void SaveAchievementsAtomically(List<Achievements> achievements, string finalPath, Game game)
+        private void SaveAchievementsAtomically(List<Achievement> achievements, string finalPath, Game game)
         {
             string gameId = game.Id.ToString();
             string tempPath = Path.Combine(_xeniaAchievementsDir, $"{gameId}.temp.json");
@@ -277,7 +269,7 @@ namespace SuccessStory.Clients
                     string existingJson = File.ReadAllText(finalPath);
                     gameAchievements = Serialization.FromJson<GameAchievements>(existingJson);
 
-                    foreach (var newAchievement in achievements.Where(a => a.DateUnlocked != DateTime.MinValue))
+                    foreach (var newAchievement in achievements.Where(a => a.DateUnlocked.HasValue))
                     {
                         var existingAchievement = gameAchievements.Items.FirstOrDefault(x => x.Name == newAchievement.Name);
                         if (existingAchievement != null)
@@ -390,12 +382,12 @@ namespace SuccessStory.Clients
 
                 if (!(bool)CachedConfigurationValidationResult)
                 {
-                    ShowNotificationPluginNoConfiguration(ResourceProvider.GetString("LOCSuccessStoryNotificationsXbox360BadConfig"));
+                    ShowNotificationPluginNoConfiguration();
                 }
             }
             else if (!(bool)CachedConfigurationValidationResult)
             {
-                ShowNotificationPluginErrorMessage();
+                ShowNotificationPluginErrorMessage(PlayniteTools.ExternalPlugin.SuccessStory);
             }
 
             return (bool)CachedConfigurationValidationResult;

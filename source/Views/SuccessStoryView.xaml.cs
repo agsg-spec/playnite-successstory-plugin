@@ -41,11 +41,17 @@ namespace SuccessStory
 
         private static Filters Filters { get; set; } = null;
 
+        private bool OnlyRa { get; }
+        private bool ExcludeRa { get; }
+
 
         public SuccessView(bool isRetroAchievements = false, Game GameSelected = null)
         {
             try
             {
+                OnlyRa = PluginDatabase.PluginSettings.Settings.EnableRetroAchievementsView && isRetroAchievements;
+                ExcludeRa = PluginDatabase.PluginSettings.Settings.EnableRetroAchievementsView && !isRetroAchievements;
+
                 InitializeComponent();
 
                 SuccessViewData.Settings = PluginDatabase.PluginSettings.Settings;
@@ -100,18 +106,18 @@ namespace SuccessStory
 
 
                 PART_DataLoad.Visibility = Visibility.Visible;
-                PART_Data.Visibility = Visibility.Hidden;
+                PART_Data.Visibility = Visibility.Collapsed;
 
                 _ = Task.Run(() =>
                 {
-                    GetListGame();
-                    GetListAll();
+                    GetListGame(isRetroAchievements);
+                    GetListAll(isRetroAchievements);
                     SetGraphicsAchievementsSources();
 
                     ProgressionGlobal = SuccessStoryStats.Progession();
                     ProgressionLaunched = SuccessStoryStats.ProgessionLaunched();
 
-                    GraphicsData = SuccessStoryStats.GetCountByMonth(null, 12);
+                    GraphicsData = SuccessStoryStats.GetCountByMonth(null, 12, OnlyRa, ExcludeRa);
                     StatsGraphicsAchievementsLabels = GraphicsData.Labels;
 
 
@@ -269,6 +275,9 @@ namespace SuccessStory
                             FilterSourceItems.Add(new ListSource { SourceName = ((icon.Length == 2) ? icon : string.Empty) + "Battle.net", SourceNameShort = "Battle.net", IsCheck = false });
                         }
                     }
+
+
+                    SuccessViewData.Data = SuccessStoryStats.GetCountUnlocked(StatsType.Day, null, null, OnlyRa, ExcludeRa);
                 })
                  .ContinueWith(antecedent =>
                  {
@@ -316,8 +325,8 @@ namespace SuccessStory
                          AchievementsMonthX.Labels = StatsGraphicsAchievementsLabels;
 
 
-                     // Set game selected
-                     if (GameSelected != null)
+                         // Set game selected
+                         if (GameSelected != null)
                          {
                              ListviewGames.SelectedIndex = ListGames.IndexOf(ListGames.Where(x => x.Name == GameSelected.Name).FirstOrDefault());
                          }
@@ -350,7 +359,7 @@ namespace SuccessStory
                          }
 
 
-                         PART_DataLoad.Visibility = Visibility.Hidden;
+                         PART_DataLoad.Visibility = Visibility.Collapsed;
                          PART_Data.Visibility = Visibility.Visible;
                      }));
                  });
@@ -358,13 +367,7 @@ namespace SuccessStory
 
                 if (!PluginDatabase.PluginSettings.Settings.DisplayChart)
                 {
-                    PART_Chart1.Visibility = Visibility.Collapsed;
-                    Grid.SetRow(PART_PluginListContener, 2);
-
-                    PART_GraphicBySource.Visibility = Visibility.Collapsed;
-                    PART_GraphicAllUnlocked.Visibility = Visibility.Collapsed;
-                    Grid.SetRowSpan(PART_PluginListContener, 5);
-                    Grid.SetRowSpan(PART_GridContenerLv, 5);
+                    Part_Charts.Visibility = Visibility.Collapsed;
                 }
 
 
@@ -378,7 +381,7 @@ namespace SuccessStory
 
         private void SetGraphicsAchievementsSources()
         {
-            AchievementsGraphicsDataCountSources data = SuccessStoryStats.GetCountBySources();
+            AchievementsGraphicsDataCountSources data = SuccessStoryStats.GetCountBySources(OnlyRa, ExcludeRa);
 
             this.Dispatcher.BeginInvoke((Action)delegate
             {
@@ -405,7 +408,7 @@ namespace SuccessStory
         /// <summary>
         /// Show list game with achievement.
         /// </summary>
-        public void GetListGame()
+        public void GetListGame(bool isRetroAchievements)
         {
             try
             {
@@ -414,7 +417,7 @@ namespace SuccessStory
 
                 RelayCommand<Guid> GoToGame = new RelayCommand<Guid>((Id) =>
                 {
-                    SuccessView.Filters = new Filters
+                    Filters = new Filters
                     {
                         FilterDate = PART_DatePicker.SelectedDate,
                         FilteredGames = (bool)PART_FilteredGames.IsChecked,
@@ -432,7 +435,8 @@ namespace SuccessStory
 
 
                 ListGames = PluginDatabase.Database
-                    .Where(x => x.HasAchievements && !x.IsDeleted && (ShowHidden ? true : x.Hidden == false))
+                    .Where(x => x.HasAchievements && !x.IsDeleted && (ShowHidden || x.Hidden == false)
+                            && (PluginDatabase.PluginSettings.Settings.EnableRetroAchievementsView && isRetroAchievements ? x.IsRa : ((PluginDatabase.PluginSettings.Settings.EnableRetroAchievementsView && !isRetroAchievements) ? !x.IsRa : true)))
                     .Select(x => new ListViewGames
                     {
                         Icon100Percent = x.Is100Percent ? Path.Combine(pluginFolder, "Resources\\badge.png") : string.Empty,
@@ -465,12 +469,13 @@ namespace SuccessStory
                 Common.LogError(ex, false, true, PluginDatabase.PluginName);
             }
         }
-        public void GetListAll()
+        public void GetListAll(bool isRetroAchievements)
         {
             try
             {
                 ObservableCollection<ListAll> ListAll = new ObservableCollection<ListAll>();
-                PluginDatabase.Database.Where(x => x.HasAchievements && !x.IsDeleted)
+                PluginDatabase.Database.Where(x => x.HasAchievements && !x.IsDeleted
+                            && (PluginDatabase.PluginSettings.Settings.EnableRetroAchievementsView && isRetroAchievements ? x.IsRa : ((PluginDatabase.PluginSettings.Settings.EnableRetroAchievementsView && !isRetroAchievements) ? !x.IsRa : true)))
                         .ForEach(x =>
                         {
                             x.Items.Where(y => y.IsUnlock).ForEach(y =>
@@ -721,6 +726,9 @@ namespace SuccessStory
 
         private string progressionLaunched = "40%";
         public string ProgressionLaunched { get => progressionLaunched; set => SetValue(ref progressionLaunched, value); }
+
+        private List<KeyValuePair<string, List<StatsData>>> data;
+        public List<KeyValuePair<string, List<StatsData>>> Data { get => data; set => SetValue(ref data, value); }
 
         private Game gameContext;
         public Game GameContext { get => gameContext; set => SetValue(ref gameContext, value); }

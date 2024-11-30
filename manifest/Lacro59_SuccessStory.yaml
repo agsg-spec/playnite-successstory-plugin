@@ -372,3 +372,39 @@ Packages:
       - 'Optimized: Epic detection (thanks to Jhanlon95)'
       - 'Fixed: Bug when entering time for manual achievements'
       - 'Fixed: Bug on auto completation on 100%'
+  - Version: 3.3.3
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2024-10-28
+    PackageUrl: https://github.com/eFMann/playnite-successstory-plugin/releases/download/v3.2.2-eFM.2/playnite-successstory-plugin_3_3_2-eFM.2.pext
+    Changelog:      
+      - 'Fixed: EnableLocal/ Steam Emualtor achievements'
+      - 'Fixed: Steam Emulator achievements rarity'
+      - 'Added: Wider range of Steam Emulators support'
+      - 'Optimized: Enable Local Custom Folder paths'
+      - 'Added: Force Steam AppID feature'
+      - 'Added: Xbox360 Achievements via Xenia Canary emulator'  
+  - Version: 3.4.1
+    RequiredApiVersion: 6.11.0
+    ReleaseDate: 2024-11-30
+    PackageUrl: https://github.com/eFMann/playnite-successstory-plugin/releases/download/v3.4.1-eFM/playnite-successstory-plugin_3_4_1-eFM.pext
+    Changelog:
+    
+      - 'Lacro59 changelog:'
+      
+      - 'Updated: Localizations'
+      - 'Optimized: UI'
+      - 'Fixed: Issue with auto game completation 100%'
+      - 'Fixed: Issue with Steam configuration'
+      - 'Fixed: Issue with date of unlocked achievements (thanks to yomisimie)'
+      - 'Fixed: Issue with manually det RetroAchievements ID'
+      - 'Added: New theme data (see wiki)'
+      - 'Added: Export data function'
+      - 'Added: GogOssLibrary support'
+      - 'Added: Sync Genshin Impact achievements via tracker (import data in game menu)'
+      - 'Fixed: World of Warcraft Region List won''t load'
+      
+      - 'eFMann changelog:'
+      
+      - 'Added: ShadPS4 Achievements (see wiki)'
+      - 'Fixed: RPCS3 Achievements for games like Sate 3'
+      - 'Optimised: RPCS3 achievements rarity will match users specified settings' 

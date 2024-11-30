@@ -28,7 +28,7 @@ using CommonPluginsShared.Interfaces;
 
 namespace SuccessStory.Services
 {
-    public class SuccessStoryDatabase : PluginDatabaseObject<SuccessStorySettingsViewModel, SuccessStoryCollection, GameAchievements, Achievements>
+    public class SuccessStoryDatabase : PluginDatabaseObject<SuccessStorySettingsViewModel, SuccessStoryCollection, GameAchievements, Achievement>
     {
         public SuccessStory Plugin { get; set; }
 
@@ -51,6 +51,7 @@ namespace SuccessStory.Services
                             { AchievementSource.Playstation, new PSNAchievements() },
                             { AchievementSource.RetroAchievements, new RetroAchievements() },
                             { AchievementSource.RPCS3, new Rpcs3Achievements() },
+                            { AchievementSource.ShadPS4, new ShadPS4Achievements() },
                             { AchievementSource.Xbox360, new Xbox360Achievements() },
                             { AchievementSource.Starcraft2, new Starcraft2Achievements() },
                             { AchievementSource.Steam, new SteamAchievements() },
@@ -85,7 +86,7 @@ namespace SuccessStory.Services
                 stopWatch.Start();
 
                 Database = new SuccessStoryCollection(Paths.PluginDatabasePath);
-                Database.SetGameInfo<Achievements>();
+                Database.SetGameInfo<Achievement>();
 
                 DeleteDataWithDeletedGame();
 
@@ -326,7 +327,7 @@ namespace SuccessStory.Services
                     {
                         if (ListGames[0].GameUrl.IsNullOrEmpty())
                         {
-                            Logger.Warn($"No TrueAchievements url for {game.Name}");
+                            Logger.Warn($"No TrueAchievements (Steam) url for {game.Name}");
                         }
                         else
                         {
@@ -335,7 +336,7 @@ namespace SuccessStory.Services
                     }
                     else
                     {
-                        Logger.Warn($"Game not found on TrueSteamAchivements for {game.Name}");
+                        Logger.Warn($"Game not found on TrueSteamAchivements (Steam) for {game.Name}");
                     }
 
                     ListGames = TrueAchievements.SearchGame(game, OriginData.Xbox);
@@ -343,7 +344,7 @@ namespace SuccessStory.Services
                     {
                         if (ListGames[0].GameUrl.IsNullOrEmpty())
                         {
-                            Logger.Warn($"No TrueAchievements url for {game.Name}");
+                            Logger.Warn($"No TrueAchievements (Xbox) url for {game.Name}");
                         }
                         else
                         {
@@ -352,17 +353,17 @@ namespace SuccessStory.Services
                     }
                     else
                     {
-                        Logger.Warn($"Game not found on TrueAchivements for {game.Name}");
+                        Logger.Warn($"Game not found on TrueAchivements (Xbox) for {game.Name}");
                     }
 
                     if (EstimateTimeSteam.DataCount >= EstimateTimeXbox.DataCount)
                     {
-                        Common.LogDebug(true, $"Get EstimateTimeSteam for {game.Name}");
+                        Common.LogDebug(true, $"Get EstimateTime (Steam) for {game.Name}");
                         gameAchievements.EstimateTime = EstimateTimeSteam;
                     }
                     else
                     {
-                        Common.LogDebug(true, $"Get EstimateTimeXbox for {game.Name}");
+                        Common.LogDebug(true, $"Get EstimateTime (Xbox) for {game.Name}");
                         gameAchievements.EstimateTime = EstimateTimeXbox;
                     }
                 }
@@ -388,6 +389,7 @@ namespace SuccessStory.Services
             Xbox360,
             RetroAchievements,
             RPCS3,
+            ShadPS4,
             Overwatch,
             Starcraft2,
             Wow,
@@ -396,7 +398,7 @@ namespace SuccessStory.Services
         }
 
         private static AchievementSource GetAchievementSourceFromLibraryPlugin(SuccessStorySettings settings, Game game)
-        {   
+        {
             ExternalPlugin pluginType = PlayniteTools.GetPluginType(game.PluginId);
             if (pluginType == ExternalPlugin.None)
             {
@@ -417,7 +419,7 @@ namespace SuccessStory.Services
             }
 
             switch (pluginType)
-            {                
+            {
                 case ExternalPlugin.BattleNetLibrary:
                     switch (game.Name.ToLowerInvariant())
                     {
@@ -561,11 +563,16 @@ namespace SuccessStory.Services
                     return AchievementSource.RPCS3;
                 }
 
+                if (PlayniteTools.GameUseShadPS4(game) && settings.EnableShadPS4Achievements)
+                {
+                    return AchievementSource.ShadPS4;
+                }
+
                 //else
                 //{
-                    //achievementSource = AchievementSource.RetroAchievements;
+                //achievementSource = AchievementSource.RetroAchievements;
                 //}
-                                                            
+
                 // TODO With the emulator migration problem emulator.BuiltInConfigId is null
                 // TODO emulator.BuiltInConfigId = "retroarch" is limited; other emulators has RA
                 if (game.Platforms?.Count > 0)
@@ -669,7 +676,9 @@ namespace SuccessStory.Services
                 PluginSettings.Settings.TotalGamerScore = 0;
                 PluginSettings.Settings.Percent = 0;
                 PluginSettings.Settings.EstimateTimeToUnlock = string.Empty;
-                PluginSettings.Settings.ListAchievements = new List<Achievements>();
+                PluginSettings.Settings.ListAchievements = new List<Achievement>();
+                PluginSettings.Settings.ListAchUnlockDateAsc = new List<Achievement>();
+                PluginSettings.Settings.ListAchUnlockDateDesc = new List<Achievement>();
 
                 return;
             }
@@ -688,6 +697,8 @@ namespace SuccessStory.Services
             PluginSettings.Settings.Percent = gameAchievements.Progression;
             PluginSettings.Settings.EstimateTimeToUnlock = gameAchievements.EstimateTime?.EstimateTime;
             PluginSettings.Settings.ListAchievements = gameAchievements.Items;
+            PluginSettings.Settings.ListAchUnlockDateAsc = gameAchievements.Items?.OrderBy(x => x.DateUnlocked).ThenBy(x => x.Name).ToList();
+            PluginSettings.Settings.ListAchUnlockDateDesc = gameAchievements.Items?.OrderByDescending(x => x.DateUnlocked).ThenBy(x => x.Name).ToList();
         }
 
 
@@ -735,7 +746,7 @@ namespace SuccessStory.Services
                     webItem.IsManual = true;
                     for (int i = 0; i < webItem.Items.Count; i++)
                     {
-                        Achievements found = loadedItem.Items.Find(x => (x.ApiName.IsNullOrEmpty() || x.ApiName.IsEqual(webItem.Items[i].ApiName)) && x.Name.IsEqual(webItem.Items[i].Name));
+                        Achievement found = loadedItem.Items.Find(x => (x.ApiName.IsNullOrEmpty() || x.ApiName.IsEqual(webItem.Items[i].ApiName)) && x.Name.IsEqual(webItem.Items[i].Name));
                         if (found != null)
                         {
                             webItem.Items[i].DateUnlocked = found.DateWhenUnlocked;

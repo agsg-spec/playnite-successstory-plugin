@@ -43,6 +43,7 @@ namespace SuccessStory.Views
 
         public static List<Folder> LocalPath { get; set; } = new List<Folder>();
         public static List<Folder> Rpcs3Path { get; set; } = new List<Folder>();
+        public static List<Folder> ShadPS4Path { get; set; } = new List<Folder>();
 
         private List<GameAchievements> IgnoredGames { get; set; }
 
@@ -57,6 +58,7 @@ namespace SuccessStory.Views
 
                 SteamPanel.StoreApi = SuccessStory.SteamApi;
                 EpicPanel.StoreApi = SuccessStory.EpicApi;
+                GogPanel.StoreApi = SuccessStory.GogApi;
 
                 PART_WowRegion.Text = PluginDatabase.PluginSettings.Settings.WowRegions.Find(x => x.IsSelected)?.Name;
                 PART_WowRealm.Text = PluginDatabase.PluginSettings.Settings.WowRealms.Find(x => x.IsSelected)?.Name;
@@ -107,7 +109,13 @@ namespace SuccessStory.Views
                     PART_ItemsRpcs3Folder.Visibility = Visibility.Visible;
                 }
 
-
+                ShadPS4Path = Serialization.GetClone(PluginDatabase.PluginSettings.Settings.ShadPS4InstallationFolders);
+                PART_ItemsShadPS4Folder.ItemsSource = ShadPS4Path;
+                if (ShadPS4Path.Count > 0)
+                {
+                    PART_ItemsShadPS4Folder.Visibility = Visibility.Visible;
+                }
+               
                 // Set ignored game
                 IgnoredGames = Serialization.GetClone(PluginDatabase.Database.Where(x => x.IsIgnored).ToList());
                 IgnoredGames.Sort((x, y) => x.Name.CompareTo(y.Name));
@@ -135,6 +143,7 @@ namespace SuccessStory.Views
 
                 SteamPanel.Visibility = PluginDatabase.PluginSettings.Settings.PluginState.SteamIsEnabled ? Visibility.Visible : Visibility.Collapsed;
                 EpicPanel.Visibility = PluginDatabase.PluginSettings.Settings.PluginState.EpicIsEnabled ? Visibility.Visible : Visibility.Collapsed;
+                GogPanel.Visibility = PluginDatabase.PluginSettings.Settings.PluginState.GogIsEnabled ? Visibility.Visible : Visibility.Collapsed;
             }
             catch (Exception ex)
             {
@@ -498,6 +507,80 @@ namespace SuccessStory.Views
             if (Rpcs3Path.Count == 0)
             {
                 PART_ItemsRpcs3Folder.Visibility = Visibility.Collapsed;
+            }
+        }
+        #endregion
+
+        #region ShadPS4 folders
+        private void ButtonAddShadPS4Folder_Click(object sender, RoutedEventArgs e)
+        {
+            PART_ItemsShadPS4Folder.Visibility = Visibility.Visible;
+            PART_ItemsShadPS4Folder.ItemsSource = null;
+            ShadPS4Path.Add(new Folder { FolderPath = "" });
+            PART_ItemsShadPS4Folder.ItemsSource = ShadPS4Path;
+        }
+
+        private void ButtonSelectShadPS4Folder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string selectedFolder = API.Instance.Dialogs.SelectFolder();
+                if (!selectedFolder.IsNullOrEmpty())
+                {
+                    if (Directory.Exists(selectedFolder))
+                    {
+                        // Look for ShadPS4's specific path structure
+                        string userGameDataPath = Path.Combine(selectedFolder, "user", "game_data");
+                        if (!Directory.Exists(userGameDataPath))
+                        {
+                            Logger.Warn($"No valid ShadPS4 game_data folder found in {selectedFolder}");
+                            API.Instance.Dialogs.ShowMessage(
+                                "Selected folder must be the ShadPS4 installation directory containing 'user/game_data' path",
+                                "Invalid Folder",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning
+                            );
+                            return;
+                        }
+
+                        // Verify we can find at least one game with trophy data
+                        bool hasTrophyData = Directory.GetDirectories(userGameDataPath)
+                            .Any(titleDir => Directory.Exists(Path.Combine(titleDir, "trophyfiles")));
+
+                        if (!hasTrophyData)
+                        {
+                            Logger.Warn($"No trophy data found in any game folder in {selectedFolder}");
+                            API.Instance.Dialogs.ShowMessage(
+                                "No trophy data found in the selected folder. Make sure games with trophies have been run at least once.",
+                                "No Trophy Data",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning
+                            );
+                            return;
+                        }
+
+                        PART_ShadPS4Folder.Text = selectedFolder;
+                        PluginDatabase.PluginSettings.Settings.ShadPS4InstallationFolder = selectedFolder;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Common.LogError(ex, false, true, PluginDatabase.PluginName);
+            }
+        }
+
+        private void ButtonRemoveShadPS4Folder_Click(object sender, RoutedEventArgs e)
+        {
+            int indexFolder = int.Parse(((Button)sender).Tag.ToString());
+
+            PART_ItemsShadPS4Folder.ItemsSource = null;
+            ShadPS4Path.RemoveAt(indexFolder);
+            PART_ItemsShadPS4Folder.ItemsSource = ShadPS4Path;
+
+            if (ShadPS4Path.Count == 0)
+            {
+                PART_ItemsShadPS4Folder.Visibility = Visibility.Collapsed;
             }
         }
         #endregion
