@@ -12,5 +12,5 @@ body:
       value: |
         Thanks for taking the time to contribute to this fork!
   - type: textarea
-  attributes:
-    label: "Thanks for helping"      
+    attributes:
+      label: "Thanks for helping"      
