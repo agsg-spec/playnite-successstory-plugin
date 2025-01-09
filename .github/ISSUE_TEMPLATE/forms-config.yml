@@ -1,11 +1,9 @@
 name: "👋 Want to contribute to playnite-successstory-plugin fork?"
 description: |
-Before submitting, check if your issue relates to the specific features of this fork:
-- Steam Emulator achievements
-- Xbox 360 achievements
-- ShadPS4 achievements
-For general issues, check Lacro59's repository.
-
+  Before submitting, please check if your issue is related to this fork's specific features:
+  - Steam Emulator achievements
+  - Xbox 360 achievements
+  - ShadPS4 achievements
 body:
   - type: markdown
     attributes:
