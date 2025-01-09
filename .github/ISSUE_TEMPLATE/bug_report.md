@@ -7,6 +7,15 @@ assignees: ''
 
 ---
 
+**IMPORTANT - Before submitting**
+
+- Check if your issue exists in [Lacro59's original repository](https://github.com/Lacro59/playnite-successstory-plugin) first
+- Only submit issues related to this fork's specific features:
+    -Steam Emulator achievements
+    -Xbox 360 achievements
+    -ShadPS4 achievements
+- If the issue exists in the original repository, please report it there instead.
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
