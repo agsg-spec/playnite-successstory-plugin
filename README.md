@@ -9,6 +9,8 @@
 # playnite-successstory-plugin
 Extension for [Playnite](https://playnite.link).
 
+# agsg Fork to update xenia log reading.
+
 ## Fork by eFMann: Improving Steam Emulator Achievements
 
 This fork of the SuccessStory plugin specifically attempts to fix and enhance Steam Emulator Achievement support. Please visit the [Wiki Page](https://github.com/eFMann/playnite-successstory-plugin/wiki) on how to get started.
